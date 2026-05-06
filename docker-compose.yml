@@ -1,0 +1,110 @@
+# Docker Compose - SmartHire Development Environment
+
+services:
+  postgres:
+    profiles:
+      - core
+      - all
+    image: postgres:16-alpine
+    container_name: smarthire-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-smarthire}
+      POSTGRES_USER: ${POSTGRES_USER:-smarthire}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-smarthire}
+    ports:
+      - "5500:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U smarthire -d smarthire"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - smart-hire-net
+
+  redis:
+    profiles:
+      - core
+      - all
+    image: redis:7-alpine
+    container_name: smarthire-redis
+    restart: unless-stopped
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - redis_data:/data
+    networks:
+      - smart-hire-net
+
+  bot:
+    profiles:
+      - bot
+      - all
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: smarthire-bot
+    image: smarthire-bot:latest
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql://smarthire:smarthire@postgres:5432/smarthire
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DB=0
+    ports:
+      - "8443:8443"
+    networks:
+      - smart-hire-net
+
+  api:
+    profiles:
+      - api
+      - all
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: smarthire-api
+    image: smarthire-api:latest
+    restart: unless-stopped
+    command: ["python", "run_api_server.py", "--host", "0.0.0.0", "--port", "8000"]
+    depends_on:
+      redis:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      - DATABASE_URL=postgresql://smarthire:smarthire@postgres:5432/smarthire
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    ports:
+      - "8000:8000"
+    networks:
+      - smart-hire-net
+
+networks:
+  smart-hire-net:
+    name: smart-hire-net
+    driver: bridge
+
+volumes:
+  redis_data:
+    name: smarthire-redis-data
+  postgres_data:
+    name: smarthire-postgres-data
