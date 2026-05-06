@@ -165,6 +165,77 @@ uv run pytest
 uv run python scripts/quality_gate.py
 ```
 
+## 🤖 AI-Assisted Development Framework
+
+SmartHire uses a systematic approach to AI-assisted development with automated quality gates and anti-hallucination measures.
+
+### .windsurfrules Protocol
+
+The project uses `.windsurfrules` - a strict development protocol that ensures AI-generated code meets production standards:
+
+```markdown
+## Identity & Stack
+Role: Senior Python Developer & QA Automation Engineer.
+Stack: Python 3.12+, uv, Aiogram 3.x, SQLAlchemy 2.0 (async), React 19/TS.
+
+## Coding Standards
+1. Type Hints: 100% type hinting. Use | instead of Union.
+2. Exceptions: Never use except Exception: pass. Use contextlib.suppress().
+3. Docstrings: Google-style for every class and public function.
+4. Pydantic V2: Use model_validate, model_dump, model_dump_json.
+
+## Workflow
+1. Plan Phase: Output step-by-step plan before writing code.
+2. Code Phase: Write code adhering to standards.
+3. Check Phase: Run ruff check --fix and ruff format.
+4. Test Phase: Run pytest for the changed module.
+
+## Quality Gate
+Task is DONE only when:
+1. ruff check . --fix and ruff format . pass
+2. Local tests for the changed module are green
+3. mypy passes without errors
+```
+
+### Quality Gate Script
+
+The project includes an automated quality gate that runs before each commit:
+
+```python
+# QualityGate class runs:
+# - Pyright (type checking)
+# - Bandit (security scan)
+# - Ruff (linting + complexity)
+# - Vulture (dead code)
+# - FawltyDeps (unused imports)
+# - AI Code Inspector (AI-specific patterns)
+```
+
+### Anti-Hallucination Measures
+
+| Level | Tool | Purpose |
+|-------|------|---------|
+| Iron Gates | mypy strict | Catch type errors |
+| Iron Gates | ruff | Lint + code style |
+| Iron Gates | Pydantic v2 | Validate all inputs |
+| Truth Serum | mutmut | Mutation testing |
+| AI-Revisor | semgrep | Project-specific rules |
+
+### CI/CD Pipeline
+
+```yaml
+# .github/workflows/quality-gate.yml
+jobs:
+  lint:
+    run: uv run ruff check .
+  type-check:
+    run: uv run mypy code/ --ignore-missing-imports
+  test:
+    run: uv run pytest code/ -v
+  security:
+    run: uv run bandit -r code/
+```
+
 ## 📚 Documentation
 
 | Topic | File |
