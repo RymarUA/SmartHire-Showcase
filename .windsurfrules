@@ -21,6 +21,7 @@ Stack: Python 3.12+, `uv`, Aiogram 3.x, SQLAlchemy 2.0 (async), React 19/TS.
 3. **Multi-Tenancy**: Always include `tenant_id`. Use `TenantQueryBuilder`.
 4. **Security**: No raw PII in logs. Use masking functions.
 5. **Feature Flags**: Check `is_enabled()` before business logic.
+6. **DRY / Canonical Imports**: Shared utilities live in `core/shared/`. Handlers re-export from there, never duplicate. Example: `send_temporary_notification` → canonical in `core/shared/handler_utils.py`, re-exported in `handlers/common/__init__.py`.
 
 ## Workflow
 

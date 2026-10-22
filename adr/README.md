@@ -18,13 +18,24 @@ New decisions follow `docs/adr/template.md` from the private repository.
 | 0028 | [0028_zero_downtime_deployments.md](0028_zero_downtime_deployments.md) | Helm HPA+PDB + expand-contract migration discipline | Accepted |
 | 0030 | [0030_multitenancy_hardening.md](0030_multitenancy_hardening.md) | Multi-tenancy hardening: RLS FORCE + `@tenant_scoped` + middleware | Accepted |
 | 0032 | [0032_service_layer_enforcement.md](0032_service_layer_enforcement.md) | Headless service layer: handlers never import from `database/` | Accepted |
+| 0048 | [0048_typed_dependency_injection.md](0048_typed_dependency_injection.md) | Typed DI on Dishka: explicit lifetimes, fail-closed tenant scopes; legacy container removed | Completed |
+| 0069 | [0069_canonical_exception_hierarchy.md](0069_canonical_exception_hierarchy.md) | One class object per exception name; identity pinned across import paths | Accepted |
+| 0070 | [0070_normalized_revenue_ledger.md](0070_normalized_revenue_ledger.md) | Single CTE as the only definition of "what counts as revenue" | Accepted |
+| 0072 | [0072_e2e_tenant_isolation_model.md](0072_e2e_tenant_isolation_model.md) | E2E tenant isolation: decision space documented, owner-gated | Draft |
+| 0074 | [0074_onboarding_proof_of_ownership.md](0074_onboarding_proof_of_ownership.md) | Challenge-nonce over webhook replaces `getUpdates` polling | Draft |
 
 ## Numbering Convention
+
+Production numbering is continuous (`001`–`0075`+). Rough bands:
 
 - `001`–`009`: Foundational architecture (tenancy, modules, data model)
 - `0010`–`0019`: Data & storage decisions
 - `0020`–`0029`: Integration & security
 - `0030`–`0039`: Operational & deployment
+- `0040`+: DI migration, domain layer, frontend topology, governance, revenue ledger
+
+This showcase publishes a curated subset — the decisions that best explain how
+the platform is designed and why.
 
 ## Template
 

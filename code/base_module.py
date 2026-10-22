@@ -93,7 +93,7 @@ class BaseModule(ABC):
         """Initialise module dependencies from the DI container.
 
         Args:
-            container: Application-level dependency-injector Container.
+            container: Application-level typed DI container (Dishka-based).
         """
 
     @abstractmethod

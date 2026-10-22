@@ -1,162 +1,91 @@
-# Dependency Injection Container
+# Typed Dependency Injection (Dishka)
 
-SmartHire uses `dependency-injector` library for IoC container. All services are registered in the container and accessed via DI, avoiding global state and making testing easier.
+SmartHire uses **Dishka** for typed dependency injection (`core/di_v2/`). All
+services resolve through typed scopes with explicit lifetimes — no global state,
+no `Any`-typed provider calls, no `# type: ignore` on service boundaries.
 
-## Architecture
+Legacy `dependency-injector` container was fully removed (ADR-0048).
+
+## Lifetimes
+
+| Lifetime | Scope | Examples |
+|----------|-------|----------|
+| Application | one per process | DB pool, Redis client, config |
+| Request/tenant | per request or per update | Gateways, Services — always carry explicit `tenant_id` |
+| Action | per business operation | Short-lived command handlers |
+| System/platform | cross-tenant operations | Admin surfaces, platform analytics |
+
+Tenant-scoped objects are **never** application singletons.
+
+## Composition Root
+
+One typed composition root serves all three transports:
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                     DIContainer                             │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐        │
-│  │  Gateway    │  │  Services   │  │  Repos      │        │
-│  │  (billing,  │  │  (anketa,   │  │  (anketa,   │        │
-│  │   payment)  │  │   payment)  │  │   payment)  │        │
-│  └─────────────┘  └─────────────┘  └─────────────┘        │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐        │
-│  │  Cache      │  │  Scheduler  │  │  Config     │        │
-│  └─────────────┘  └─────────────┘  └─────────────┘        │
-└─────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────┐
+│              core/di_v2/  (typed scopes)             │
+│                                                      │
+│   user_service_scope(tenant_id)                      │
+│   anketa_service_scope(tenant_id)                    │
+│   payment_service_scope(tenant_id)                   │
+│   ticket_service_scope(tenant_id)                    │
+│   billing_service_scope(tenant_id)                   │
+│   ... ~60 typed resolver functions                   │
+└──────────┬───────────────┬───────────────┬───────────┘
+           │               │               │
+     FastAPI request   Aiogram update   APScheduler job
+     (per-request      (per-update      (explicit task
+      scope)            middleware)      scope)
 ```
 
-## Container Setup
+## Key Pattern
 
 ```python
-# core/di/container.py
-from dependency_injector import containers, providers
+# Scope entry point: typed chain, fail-closed
+async with user_service_scope(tenant_id) as user_service:
+    await user_service.notify_subscribers(anketa_id)
 
-class DIContainer(containers.DeclarativeContainer):
-    config = providers.Configuration()
-
-    # Database
-    db_pool = providers.Singleton(
-        DatabasePool,
-        database_url=config.database_url,
-    )
-    db_session = providers.Factory(
-        DbSession,
-        pool=db_pool,
-    )
-
-    # Gateways
-    billing_gateway = providers.Factory(
-        BillingGateway,
-        session=db_session,
-    )
-    payment_gateway = providers.Factory(
-        PaymentGateway,
-        session=db_session,
-    )
-
-    # Services
-    anketa_service = providers.Factory(
-        AnketaService,
-        gateway=anketa_gateway,
-    )
-    payment_service = providers.Factory(
-        PaymentService,
-        gateway=payment_gateway,
-    )
-
-    # Cache
-    redis_client = providers.Singleton(
-        RedisClient,
-        host=config.redis_host,
-        port=config.redis_port,
-    )
-    cache = providers.Factory(
-        TenantCache,
-        redis=redis_client,
-    )
+# Missing tenant_id or unavailable DB pool -> raises.
+# It never silently proceeds without tenant context.
 ```
 
-## Initialization
+Background jobs open the same typed scope explicitly — no global container access:
 
 ```python
-# main.py
-from core.di import init_container, set_bot, set_dispatcher
-
-async def main():
-    # Initialize container with config
-    container = init_container(
-        database_url=os.getenv("DATABASE_URL"),
-        redis_host=os.getenv("REDIS_HOST", "localhost"),
-        redis_port=int(os.getenv("REDIS_PORT", "6379")),
-    )
-
-    # Set runtime dependencies
-    set_bot(bot)
-    set_dispatcher(dp)
-
-    # Start application
-    await dp.start_polling(bot)
+async def refresh_messages(tenant_id: str) -> None:
+    async with user_service_scope(tenant_id) as user_service:
+        ...
 ```
 
-## Using in Handlers
+## Fail-Closed Rule
+
+Every tenant-scoped scope **fails closed**: when `tenant_id` is missing or the
+database pool is unavailable, resolution raises instead of proceeding without
+tenant context. A background job that cannot establish tenant scope marks its
+work failed (dead-letter) rather than running unscoped.
+
+## Anti-Pattern: Removed with the Legacy Container
 
 ```python
-# handlers/anketa.py
-from core.di import get_anketa_service
+# LEGACY (deleted): service locator, Any-typed, implicit lifetimes
+service = get_container().user_service()      # -> Any
+gateway = get_gateway("user", tenant_id)      # cached by (name, tenant_id)
 
-@router.message(F.text == "Мої анкети")
-async def show_anketa(message: Message, state: FSMContext):
-    # Get service from container
-    anketa_service = get_anketa_service()
-
-    # Use service (no direct DB access)
-    ankety = await anketa_service.get_all(tenant_id)
-
-    await message.answer(f"Знайдено {len(ankety)} анкет")
+# TYPED (current): explicit scope, concrete types
+async with user_service_scope(tenant_id) as service:
+    ...
 ```
-
-## Using in Services
-
-```python
-# core/services/anketa.py
-from core.repositories.anketa import AnketaGateway
-
-class AnketaService:
-    def __init__(self, gateway: AnketaGateway) -> None:
-        self.gateway = gateway
-
-    async def get_all(self, tenant_id: str) -> list[dict]:
-        return await self.gateway.get_all(tenant_id)
-```
-
-## Key Functions
-
-| Function | Purpose |
-|----------|---------|
-| `init_container(config)` | Initialize container with config |
-| `get_container()` | Get container instance |
-| `get_anketa_service()` | Get AnketaService |
-| `get_payment_service()` | Get PaymentService |
-| `get_gateway()` | Get gateway by type |
-| `set_bot(bot)` | Set bot instance at runtime |
-| `set_dispatcher(dp)` | Set dispatcher at runtime |
-| `shutdown_container()` | Cleanup on shutdown |
 
 ## Benefits
 
-1. **No Global State**: All dependencies injected, not imported globally
-2. **Testability**: Easy to mock dependencies in tests
-3. **Single Responsibility**: Each service has clear dependency list
-4. **Runtime Configuration**: Config loaded from env, not hardcoded
-5. **Lazy Initialization**: Services created only when needed
-
-## Anti-Pattern: Don't Do This
-
-```python
-# BAD: Global import
-from core.repositories.anketa import AnketaGateway
-gateway = AnketaGateway(session)  # Creates dependency manually
-
-# GOOD: Use container
-from core.di import get_anketa_service
-service = get_anketa_service()  # Container manages lifecycle
-```
+1. **Concrete types at boundaries** — no `cast()`, no `no-any-return` suppressions
+2. **Explicit tenant/system scopes** — isolation is visible in signatures
+3. **One composition root** — FastAPI, Aiogram, and scheduler share it
+4. **Testable** — typed provider overrides instead of container patching
 
 ## References
 
-- Container: `core/container.py`
-- DI module: `core/di/`
+- ADR-0048: Typed Dependency Injection Migration
+- ADR-0052: Composition root extraction
+- ADR-0032: Service layer enforcement
 - Services: `core/services/`

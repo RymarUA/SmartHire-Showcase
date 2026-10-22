@@ -11,12 +11,12 @@
 дає достатньо, щоб зрозуміти, як платформа спроєктована і чому саме так.
 
 [![Python](https://img.shields.io/badge/python-3.12%2B-3776AB?style=flat-square&logo=python&logoColor=white)](pyproject.toml)
-[![FastAPI](https://img.shields.io/badge/FastAPI-0.135-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
-[![Aiogram](https://img.shields.io/badge/aiogram-3.26-2CA5E0?style=flat-square&logo=telegram&logoColor=white)](https://docs.aiogram.dev/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-14%2B%20RLS-336791?style=flat-square&logo=postgresql&logoColor=white)](#multi-tenancy-три-шари-захисту)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.143-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![Aiogram](https://img.shields.io/badge/aiogram-3.31-2CA5E0?style=flat-square&logo=telegram&logoColor=white)](https://docs.aiogram.dev/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16%2B%20RLS-336791?style=flat-square&logo=postgresql&logoColor=white)](#multi-tenancy-три-шари-захисту)
 [![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0%20async-D71F00?style=flat-square)](https://docs.sqlalchemy.org/)
 [![React](https://img.shields.io/badge/React-19%20%2B%20TS-61DAFB?style=flat-square&logo=react&logoColor=black)](dashboard/)
-[![Kubernetes](https://img.shields.io/badge/Kubernetes-Helm%20%2B%20HPA-326CE5?style=flat-square&logo=kubernetes&logoColor=white)](helm/smart-os/)
+[![Kubernetes](https://img.shields.io/badge/Kubernetes-Helm%20%2B%20HPA-326CE5?style=flat-square&logo=kubernetes&logoColor=white)](code/helm_values.yaml)
 [![OTEL](https://img.shields.io/badge/observability-OTEL%20%2B%20Prometheus-E6522C?style=flat-square&logo=prometheus&logoColor=white)](docs/infrastructure.md)
 
 [**Quick scan**](#quick-scan-30-секунд) ·
@@ -35,9 +35,9 @@
 
 | | |
 |---|---|
-| **Що це** | Multi-tenant SaaS на Telegram + Web. 1 бот, 4 фронтенди, FastAPI, K8s |
+| **Що це** | Multi-tenant SaaS на Telegram + Web. 5 entry points (1 бот + 4 фронтенди), FastAPI, K8s |
 | **Масштаб** | 1000+ тенантів в одному runtime, < 20% degradation під load |
-| **Кодова база** | ~85k LOC Python + ~40k LOC TypeScript, 33 ADR, 7 модулів, 19 API роутерів |
+| **Кодова база** | ~105k LOC Python (66k app + 39k tests) + ~61k LOC TypeScript, 61 ADR, 7 модулів, 44 API роутери |
 | **Інженерна основа** | PostgreSQL RLS, headless service layer, basis-point money, AES-256 PII, zero-downtime deploys |
 | **Бізнес-функції** | Multi-payment (WayForPay + LiqPay), White Label з YAML, self-service onboarding, billing з grace period |
 | **Що відкрито тут** | ADR, sanitized code samples, архітектурні діаграми, deployment configs |
@@ -59,7 +59,7 @@ SmartHire — не один моноліт, а композиція з 9 фун�
 %%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#0A66C2', 'primaryTextColor': '#fff', 'primaryBorderColor': '#0A66C2', 'lineColor': '#6B7280'}}}%%
 flowchart LR
     subgraph Surfaces[" 🪟 User Surfaces "]
-        TG_Bot["Telegram Bot<br/>aiogram 3.26"]
+        TG_Bot["Telegram Bot<br/>aiogram 3.31"]
         TG_MA["Telegram Mini App<br/>:3001"]
         Dash["Dashboard<br/>:3000"]
         Onb["Onboarding<br/>:3002"]
@@ -67,7 +67,7 @@ flowchart LR
     end
 
     subgraph Platform[" 🏗 Platform Core "]
-        API["FastAPI · 19 routers"]
+        API["FastAPI · 44 routers"]
         MW["Middlewares<br/>tenant · jwt · rate · billing"]
         DI["DI Container"]
         Reg["Module Registry"]
@@ -80,7 +80,7 @@ flowchart LR
         Bl["Billing"]
         Rec["Recruiting"]
         Sup["Support"]
-        Sh2["Shop Variant"]
+        Shifts["Shifts"]
     end
 
     subgraph Domain[" 🧠 Domain Layer (headless) "]
@@ -89,7 +89,7 @@ flowchart LR
     end
 
     subgraph Infra[" 🗄 Infrastructure "]
-        PG["PostgreSQL 14+<br/>RLS + FORCE"]
+        PG["PostgreSQL 16+<br/>RLS + FORCE"]
         Rd["Redis 7 Sentinel<br/>FSM · cache · queue · idempotency"]
         Crypto["AES-256<br/>PII encryption"]
     end
@@ -235,7 +235,7 @@ Readiness probe перевіряє 4 залежності: PostgreSQL, Redis, Te
 
 Не один Telegram-бот, а п'ять окремих поверхонь з різними вимогами:
 
-- **Telegram Bot** (aiogram 3.26) — основний канал для кінцевих користувачів. FSM на Redis,
+- **Telegram Bot** (aiogram 3.31) — основний канал для кінцевих користувачів. FSM на Redis,
   middleware pipeline (auth → tenant → rate limit → billing check), 7 бізнес-модулів.
 - **Telegram Mini App** (React + TS, port 3001) — повноцінний веб-інтерфейс всередині Telegram
   з автентифікацією через `initData` HMAC.
@@ -243,7 +243,8 @@ Readiness probe перевіряє 4 залежності: PostgreSQL, Redis, Te
   Overview, Tenants, Onboarding wizard, Modules, Billing, Feature Flags, White Label,
   Analytics, Monitoring, Webhook Migration tracker.
 - **Onboarding** (React, port 3002) — self-service лендинг для нових тенантів. 5-кроковий wizard.
-- **Helm Configurator** (React, port 3003) — візуальний конструктор `values.yaml` для деплою.
+- **Candidate Portal** (React, port 3004) — веб-вітрина для кінцевих користувачів:
+  каталог, запис, заявки, магазин, статус — поза Telegram.
 
 Усі 4 фронтенди працюють паралельно без конфліктів портів. Auth — JWT у httpOnly cookies,
 TanStack Query для API, Vite для білдів.
@@ -328,7 +329,8 @@ RLS — лише один з шарів. Повна картина:
 - **Load** (`locust`) — навантажувальні сценарії на API rate limit, payment flow, dashboard queries.
 - **Stress + Smoke** — окремо.
 
-Coverage baseline: 85-95% на критичних модулях (payments, billing, repositories, tenant isolation).
+Coverage: enforced floor 68% через ratchet у `pyproject.toml`, фактично ~71% по
+репозиторію; критичні модулі (payments, billing, tenant isolation) — вище.
 
 ### 🚀 Deployment (5 профілів + Helm)
 
@@ -359,13 +361,15 @@ Docker Compose з профілями:
 
 ### 🧰 Internals
 
-- **Dependency Injection** через `dependency-injector 4.49` — жодних глобальних імпортів сервісів.
+- **Dependency Injection** — typed DI на **Dishka** (`core/di_v2/`, ADR-0048): явні
+  lifetimes (app / request-tenant / action / system), fail-closed tenant scopes,
+  ~60 типізованих resolver'ів. Legacy `dependency-injector` контейнер видалено.
 - **10 startup-модулів** у `core/startup/` з правильним порядком ініціалізації і teardown.
   Graceful shutdown 30s — drain → close TG session → close pools → exit.
 - **Distributed primitives** на Redis: locks, semaphores, idempotency keys, rate limiters.
 - **structlog + loguru + rich** для logging з trace_id injection.
 - **APScheduler** для billing, reconciliation, cleanup jobs.
-- **33 ADR** документують усі нетривіальні рішення в `docs/architecture/`.
+- **61 ADR** документують усі нетривіальні рішення в production-репозиторії (`docs/adr/` та `docs/architecture/`); у цьому showcase опубліковано 17 ключових.
 
 ---
 
@@ -375,7 +379,7 @@ Production-цифри замість декларацій:
 
 | Метрика | Значення | Як виміряно |
 |---|---|---|
-| **Активних тенантів в одному runtime** | 1000+ | `smarthire_active_tenants` Gauge |
+| **Тенантів в одному runtime (load-tested)** | 1000+ | Locust, 1000 concurrent users |
 | **Performance degradation під full load** | < 20% | Locust, 1000 концурентних користувачів |
 | **RLS overhead на запит** | < 5% | EXPLAIN ANALYZE до/після, composite-індекси |
 | **p99 DB query duration** | < 50ms | `db_query_duration_seconds` p99, OLTP buckets |
@@ -384,11 +388,12 @@ Production-цифри замість декларацій:
 | **Час додавання нового White Label бренду** | 5 хв | YAML copy + restart, без релізу |
 | **Час додавання нового бізнес-модуля** | 1-2 дні | `BaseModule` контракт, без змін у ядрі |
 | **Час deploy без downtime** | ~3 хв | Helm rolling update, HPA + PDB |
-| **Coverage критичних модулів** | 85-95% | pytest --cov на payments, billing, repositories |
-| **ADR документів** | 33 | `docs/architecture/` |
+| **Coverage** | enforced floor 68% (ratchet), ~71% фактично | pytest --cov, ratchet у `pyproject.toml` |
+| **ADR документів (production)** | 61 | `docs/adr/` + `docs/architecture/` у приватному репозиторії |
+| **ADR опубліковано тут** | 17 | `adr/` у цьому репозиторії |
 | **Бізнес-модулів** | 7 | `core/modules/`, всі через `BaseModule` |
-| **API роутерів** | 19 | FastAPI, OpenAPI auto-generated |
-| **Окремих фронтендів** | 4 | React 19 + Vite, порти 3000-3003 |
+| **API роутерів** | 44 | FastAPI, OpenAPI auto-generated |
+| **Окремих поверхонь** | 5 | 1 Telegram Bot + 4 фронтенди (порти 3000-3004) |
 | **Telegram FSM-станів** | 50+ | `core/states/`, типобезпечні через `StatesGroup` |
 
 ---
@@ -397,16 +402,16 @@ Production-цифри замість декларацій:
 
 ### Backend
 - **Python 3.12+** — strict typing, modern syntax (PEP 695, match/case)
-- **aiogram 3.26** — Telegram bot framework, native async, FSM
-- **FastAPI 0.135** + **Pydantic v2** — async API, OpenAPI з коробки
+- **aiogram 3.31** — Telegram bot framework, native async, FSM
+- **FastAPI 0.143** + **Pydantic v2** — async API, OpenAPI з коробки
 - **aiohttp 3.13** — outbound HTTP (payments, integrations)
 - **SQLAlchemy 2.0 async** + **asyncpg** — type-safe ORM
 - **Alembic** — міграції з expand-contract дисципліною
-- **dependency-injector 4.49** — DI без магії
+- **Dishka 1.10+** — typed DI з явними lifetimes (ADR-0048)
 - **APScheduler** — billing, reconciliation, cleanup
 
 ### Data
-- **PostgreSQL 14+** — RLS + FORCE, JSONB, `FOR UPDATE SKIP LOCKED` для черг
+- **PostgreSQL 16+** — RLS + FORCE, JSONB, `FOR UPDATE SKIP LOCKED` для черг
 - **Redis 7 + Sentinel** — FSM, cache, queue, rate limit, idempotency, pub/sub
 - **cryptography 46** — AES-256 для PII, HMAC для callbacks
 - **sqlglot** — SQL parsing для безпечних admin-запитів
@@ -459,11 +464,18 @@ Production-цифри замість декларацій:
 Повний протокол — у [`.windsurfrules`](.windsurfrules) (~200 рядків інженерних правил).
 Це не магічний промпт, а дисципліна, вироблена за 18 місяців роботи з AI на проді.
 
+**Еволюція протоколу (2026).** Дисципліна переросла Windsurf: тепер основний
+репозиторій керується через `AGENTS.md` + **Devin** (Desktop/CLI) з hook-шаром,
+який блокує деструктивні git-операції на рівні інструменту, і тим самим
+quality gate (`ruff` + `semgrep` + AST-ратчети + pytest). Agent-ready кодова база —
+не метафора: контекст, скілли, заборони і верифікація формалізовані, тому AI-агент
+працює як junior-колега з обмеженими правами, а не як генератор тексту.
+
 ---
 
 ## ADR Index
 
-33 архітектурні рішення документовані. Найважливіші для розуміння системи:
+61 архітектурних рішень задокументовано. Найважливіші для розуміння системи:
 
 | # | Документ | Про що |
 |---|---|---|
@@ -476,6 +488,11 @@ Production-цифри замість декларацій:
 | 0025 | [Feature Flags as Kill-Switch](adr/0025_feature_flags.md) | Per-tenant runtime toggles |
 | 0028 | [Zero-Downtime Deployments](adr/0028_zero_downtime_deployments.md) | Helm + expand-contract |
 | 0032 | [Service Layer Enforcement](adr/0032_service_layer_enforcement.md) | Headless: handler ↛ DB |
+| 0048 | [Typed Dependency Injection](adr/0048_typed_dependency_injection.md) | Dishka, явні lifetimes, fail-closed scopes |
+| 0069 | [Canonical Exception Hierarchy](adr/0069_canonical_exception_hierarchy.md) | Один class object на ім'я |
+| 0070 | [Normalized Revenue Ledger](adr/0070_normalized_revenue_ledger.md) | Один CTE = визначення revenue |
+| 0072 | [E2E Tenant-Isolation Model](adr/0072_e2e_tenant_isolation_model.md) | Decision space, owner-gated (draft) |
+| 0074 | [Onboarding Proof-of-Ownership](adr/0074_onboarding_proof_of_ownership.md) | Challenge-nonce замість polling (draft) |
 
 Повний індекс — [`adr/README.md`](adr/README.md).
 
