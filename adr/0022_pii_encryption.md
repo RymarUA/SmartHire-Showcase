@@ -1,4 +1,4 @@
-# ADR-0023: PII Encryption Strategy
+# ADR-0022: PII Encryption Strategy
 
 **Status:** Accepted  
 **Date:** 2025-02-20  

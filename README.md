@@ -1,14 +1,17 @@
 <div align="center">
 
-<img src="https://img.shields.io/badge/SmartHire-Production%20Architecture-0A66C2?style=for-the-badge&logo=telegram&logoColor=white" alt="SmartHire" />
+<img src="https://img.shields.io/badge/SmartHire-Multi--tenant%20Architecture-0A66C2?style=for-the-badge&logo=telegram&logoColor=white" alt="SmartHire" />
 
 # SmartHire — Architecture Showcase
 
-### Production patterns from a Multi-tenant B2B SaaS handling 1000+ tenants in a single runtime
+### Engineering patterns from a multi-tenant B2B SaaS — designed for 1000+ tenants in a single runtime
 
 Це публічна частина архітектури реальної SaaS-платформи: ADR, code samples,
 інженерні рішення. Source code закритий з комерційних причин — те, що нижче,
 дає достатньо, щоб зрозуміти, як платформа спроєктована і чому саме так.
+
+**Статус:** pre-launch — staging-verified (deploy, migrations, RLS, payments),
+перший комерційний запуск у роботі.
 
 [![Python](https://img.shields.io/badge/python-3.12%2B-3776AB?style=flat-square&logo=python&logoColor=white)](pyproject.toml)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.143-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
@@ -16,7 +19,7 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16%2B%20RLS-336791?style=flat-square&logo=postgresql&logoColor=white)](#multi-tenancy-три-шари-захисту)
 [![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0%20async-D71F00?style=flat-square)](https://docs.sqlalchemy.org/)
 [![React](https://img.shields.io/badge/React-19%20%2B%20TS-61DAFB?style=flat-square&logo=react&logoColor=black)](dashboard/)
-[![Kubernetes](https://img.shields.io/badge/Kubernetes-Helm%20%2B%20HPA-326CE5?style=flat-square&logo=kubernetes&logoColor=white)](code/helm_values.yaml)
+[![TLA+](https://img.shields.io/badge/Formal%20verification-TLA%2B-4B2C83?style=flat-square)](#engineering-rigor--ai-agent-guardrails)
 [![OTEL](https://img.shields.io/badge/observability-OTEL%20%2B%20Prometheus-E6522C?style=flat-square&logo=prometheus&logoColor=white)](docs/infrastructure.md)
 
 [**Quick scan**](#quick-scan-30-секунд) ·
@@ -35,11 +38,12 @@
 
 | | |
 |---|---|
-| **Що це** | Multi-tenant SaaS на Telegram + Web. 5 entry points (1 бот + 4 фронтенди), FastAPI, K8s |
-| **Масштаб** | 1000+ тенантів в одному runtime, < 20% degradation під load |
-| **Кодова база** | ~105k LOC Python (66k app + 39k tests) + ~61k LOC TypeScript, 61 ADR, 7 модулів, 44 API роутери |
-| **Інженерна основа** | PostgreSQL RLS, headless service layer, basis-point money, AES-256 PII, zero-downtime deploys |
-| **Бізнес-функції** | Multi-payment (WayForPay + LiqPay), White Label з YAML, self-service onboarding, billing з grace period |
+| **Що це** | Модульна multi-tenant платформа для малого бізнесу на Telegram + Web. 7 entry points (3 боти + 4 фронтенди), FastAPI, Docker Compose |
+| **Продуктові лінії** | 3 бізнес-лінії — **Shop** (вітрина/продажі), **Recruiting** (найм), **Booking** (запис) + платформені можливості (білінг, підтримка, зміни, white-label) — вмикаються per-tenant через feature flags |
+| **Масштаб** | 1000+ тенантів в одному runtime, < 20% degradation під load (load-tested) |
+| **Кодова база** | ~210k LOC Python prod + ~290k tests + ~69k tooling (~574k total) + ~64k TypeScript; 62 ADR, ~30 API routers, 7 pluggable-модулів у реєстрі |
+| **Інженерна основа** | PostgreSQL RLS, headless service layer, basis-point money, AES-256 PII, blue-green deploys, TLA+ formal verification |
+| **Бізнес-функції** | Multi-payment (WayForPay + LiqPay), White Label, self-service onboarding, billing з grace period |
 | **Що відкрито тут** | ADR, sanitized code samples, архітектурні діаграми, deployment configs |
 | **Що закрито** | Source code, business logic, client configs, secrets |
 
@@ -59,28 +63,28 @@ SmartHire — не один моноліт, а композиція з 9 фун�
 %%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#0A66C2', 'primaryTextColor': '#fff', 'primaryBorderColor': '#0A66C2', 'lineColor': '#6B7280'}}}%%
 flowchart LR
     subgraph Surfaces[" 🪟 User Surfaces "]
-        TG_Bot["Telegram Bot<br/>aiogram 3.31"]
+        TG_Bots["3 Telegram Bots<br/>master · tenant · onboarding<br/>aiogram 3.31"]
         TG_MA["Telegram Mini App<br/>:3001"]
         Dash["Dashboard<br/>:3000"]
-        Onb["Onboarding<br/>:3002"]
-        Helm_UI["Helm Configurator<br/>:3003"]
+        Onb["Onboarding Web<br/>:3002"]
+        Portal["Candidate Portal<br/>:3004"]
     end
 
     subgraph Platform[" 🏗 Platform Core "]
-        API["FastAPI · 44 routers"]
+        API["FastAPI · ~30 routers<br/>+ module registry"]
         MW["Middlewares<br/>tenant · jwt · rate · billing"]
-        DI["DI Container"]
+        DI["DI Container (Dishka)"]
         Reg["Module Registry"]
     end
 
-    subgraph Modules[" 🧩 Business Modules (7) "]
-        Cat["Catalog<br/>(Anketa)"]
-        Bk["Booking"]
-        Sh["Shop"]
-        Bl["Billing"]
-        Rec["Recruiting"]
-        Sup["Support"]
-        Shifts["Shifts"]
+    subgraph Modules[" 🧩 Product Lines + Capabilities (7 pluggable) "]
+        Sh["Shop (line)"]
+        Bk["Booking (line)"]
+        Rec["Recruiting (line)"]
+        Bl["Billing (capability)"]
+        Sup["Support (capability)"]
+        Shifts["Shifts (capability)"]
+        Cat["Catalog (capability)"]
     end
 
     subgraph Domain[" 🧠 Domain Layer (headless) "]
@@ -104,14 +108,14 @@ flowchart LR
     subgraph Obs[" 📡 Observability "]
         OT["OpenTelemetry"]
         Prom["Prometheus"]
-        Graf["Grafana · 11 panels"]
+        Graf["Grafana · 3 dashboards"]
         Sen["Sentry"]
         BS["Better Stack<br/>Logtail + Heartbeat"]
     end
 
     subgraph Deploy[" 🚀 Deployment "]
-        DC["Docker Compose<br/>5 profiles"]
-        K8s["Kubernetes Helm<br/>HPA + PDB"]
+        DC["Docker Compose<br/>7 files · blue-green"]
+        K8s["Kubernetes (target)<br/>designed · deferred"]
         Sec["Security Context<br/>non-root · readOnlyFS"]
     end
 
@@ -136,6 +140,11 @@ flowchart LR
     style Obs fill:#FEE2E2,stroke:#DC2626,stroke-width:2px
     style Deploy fill:#F3E8FF,stroke:#9333EA,stroke-width:2px
 ```
+
+Реєстр тримає 7 pluggable-модулів — але продуктово вони не рівнозначні:
+**3 бізнес-лінії** (Shop, Booking, Recruiting — те, що купує тенант) і
+**платформені можливості** (Billing, Support, Shifts, Catalog — інфраструктура
+та доповнення до ліній). Усі вмикаються per-tenant через feature flags.
 
 Кожен домен — самостійна область з власною дисципліною і ADR.
 Далі по тексту — детальний розбір того, що в кожному.
@@ -169,8 +178,9 @@ Shared schema + `tenant_id` — найдешевша модель multi-tenancy,
 
 [`ADR-0032`](adr/0032_service_layer_enforcement.md) · [`code/service_layer_example.py`](code/service_layer_example.py)
 
-Жорстке правило: handler'и (aiogram і FastAPI) не імпортують з `core/database/` або `core/repositories/`.
-Перевіряється кастомним ruff-rule на pre-commit. Service приймає `tenant_id` явно.
+Жорстке правило: handler'и (aiogram і FastAPI) не імпортують з `db/` або `core/repositories/`.
+Перевіряється трьома шарами: 11 import-linter контрактів, `tach` boundary-модель
+і кастомні semgrep-правила — усе на pre-commit. Service приймає `tenant_id` явно.
 
 Результат: один і той же `AnketaService.create()` працює з Telegram-команди, REST endpoint,
 cron-job і unit-тесту без mock'а Telegram.
@@ -181,7 +191,7 @@ cron-job і unit-тесту без mock'а Telegram.
 
 `float` для грошей — баг за визначенням. У SmartHire `Money.amount_kopecks: int`,
 відсотки — basis points (`commission_bp: int = 250` = 2.5%), `Decimal` тільки на границях.
-Кастомний ruff-rule забороняє `float` у `core/payments/`.
+Кастомний semgrep-rule забороняє `float` у платіжних шляхах.
 
 ### 4. Webhook Reliability + Daily Reconciliation
 
@@ -207,12 +217,21 @@ Webhook — лише один з тригерів. Source of truth — стан 
 Per-tenant вмикання через DB-config: тенант А `[catalog, billing]`, тенант B `[booking, shop, support]`.
 Toggle у Dashboard, миттєво, без релізу.
 
-### 6. Zero-Downtime через Helm + Expand-Contract
+### 6. Zero-Downtime: blue-green Compose + Expand-Contract
 
-[`ADR-0028`](adr/0028_zero_downtime_deployments.md) · [`code/helm_values.yaml`](code/helm_values.yaml)
+[`ADR-0033`](adr/0033_zero_downtime_deployments.md) · [`code/helm_values.yaml`](code/helm_values.yaml)
 
-Helm chart з HPA (1-5 реплік), PDB = 1, pre-install hook для `alembic upgrade head`.
-Readiness probe перевіряє 4 залежності: PostgreSQL, Redis, Telegram API, payment provider.
+Production-шлях сьогодні — Docker Compose blue-green: два кольорові інстанси
+(bot/api), атомарне перемикання після in-container readiness-проб
+(`bot /ready`, `api /readiness` — гейт міряє живий флот, а не «порт відповів»),
+backup + scoped rollback при провалі. Readiness перевіряє залежності:
+PostgreSQL, Redis, Telegram API.
+
+Kubernetes/Helm — **designed target, свідомо відкладений** (рішення за ADR:
+тригер — ≥100 активних тенантів; раніше — premature ops tax).
+Проєктні значення — у [`code/helm_values.yaml`](code/helm_values.yaml)
+(design target, не production-експорт): HPA, PDB, security context,
+pre-install migrations hook.
 
 Дисципліна міграцій — only backward-compatible:
 
@@ -229,24 +248,28 @@ Readiness probe перевіряє 4 залежності: PostgreSQL, Redis, Te
 
 Шість патернів вище — те, що найважливіше показати. Але платформа на 1000+ тенантів
 складається з десятків додаткових систем. Нижче — стислий overview всього іншого,
-що не увійшло в deep-dives, але є в проді.
+що не увійшло в deep-dives, але є в кодовій базі.
 
-### 🪟 User Surfaces (5 entry points)
+### 🪟 User Surfaces (7 entry points)
 
-Не один Telegram-бот, а п'ять окремих поверхонь з різними вимогами:
+Не один Telegram-бот, а **три окремі бот-входи** (ізоляція поверхонь — жоден
+onboarding-хендлер не імпортується в master/tenant роутери) + чотири фронтенди:
 
-- **Telegram Bot** (aiogram 3.31) — основний канал для кінцевих користувачів. FSM на Redis,
-  middleware pipeline (auth → tenant → rate limit → billing check), 7 бізнес-модулів.
+- **Tenant Bot** (aiogram 3.31) — основний канал тенанта: його клієнти й персонал.
+  FSM на Redis, middleware pipeline (auth → tenant → rate limit → billing check).
+- **Master Bot** — платформена admin-поверхня (Developer Hub, god-mode з confirm-кроками).
+- **Onboarding Bot** — self-service реєстрація нового тенанта, proof-of-ownership.
 - **Telegram Mini App** (React + TS, port 3001) — повноцінний веб-інтерфейс всередині Telegram
   з автентифікацією через `initData` HMAC.
 - **Dashboard** (React 19 + shadcn/ui, port 3000) — control plane суперадміна. 12+ сторінок:
   Overview, Tenants, Onboarding wizard, Modules, Billing, Feature Flags, White Label,
   Analytics, Monitoring, Webhook Migration tracker.
-- **Onboarding** (React, port 3002) — self-service лендинг для нових тенантів. 5-кроковий wizard.
+- **Onboarding Web** (React, port 3002) — self-service лендинг для нових тенантів. Wizard.
 - **Candidate Portal** (React, port 3004) — веб-вітрина для кінцевих користувачів:
   каталог, запис, заявки, магазин, статус — поза Telegram.
 
-Усі 4 фронтенди працюють паралельно без конфліктів портів. Auth — JWT у httpOnly cookies,
+Усі 4 фронтенди — єдиний pnpm/turbo workspace зі спільними пакетами
+(`packages/ui`, `api-client`, `config`, `observability`). Auth — JWT у httpOnly cookies,
 TanStack Query для API, Vite для білдів.
 
 ### 🎨 White Label (необмежена кількість брендів)
@@ -284,7 +307,7 @@ RLS — лише один з шарів. Повна картина:
 - **SQL Injection Guard** — `TenantQueryBuilder` парсить запити через `sqlglot`,
   raw-конкатенація заборонена.
 - **PII Masking** — `utils/masking.py` маскує телефони/email перед відправкою у Logtail/Sentry.
-- **Per-tenant Feature Flags** як kill-switch — небезпечну фічу можна вимкнути на проді
+- **Per-tenant Feature Flags** як kill-switch — небезпечну фічу можна вимкнути
   у конкретного тенанта за 5 секунд через Dashboard, без релізу.
 - **Rate Limiting** на Redis — tenant-scoped, per-user, готовий до per-API-key режиму.
 - **Pydantic v2 валідація** всього вхідного трафіку.
@@ -311,71 +334,77 @@ RLS — лише один з шарів. Повна картина:
 Решта стека:
 
 - **OpenTelemetry SDK** — OTLP export → Tempo (traces) / Jaeger.
-- **Prometheus exporter** з tenant-aware labels: 12+ метрик
-  (active tenants, messages, payments, DB latency histogram з OLTP-бакетами).
-- **Grafana** — 11 панелей, auto-provisioning через Docker Compose, JSON у репо.
+- **Prometheus exporter** з tenant-aware labels: ~79 метрик
+  (active tenants, messages, payments, refund-исходы, RLS-порушення,
+  DB latency histogram з OLTP-бакетами).
+- **Grafana** — 3 auto-provisioned дашборди (business / platform / infrastructure), JSON у репо.
 - **Sentry** — error tracking з PII filter (нічого чутливого не виходить за межі).
 - **Better Stack**: Logtail для structured logs, Heartbeat для uptime monitoring і алертів.
 - **Health vs Readiness** — окремі endpoints. Health = "процес живий", Readiness = "DB+Redis+TG+Payment OK".
 
-### 🧪 Тестування (4 рівні)
+### 🧪 Тестування (6 рівнів)
 
 Не "є тести", а структурована піраміда:
 
 - **Unit** (pytest) — domain logic, services, repositories. Mock'ів мінімум, fakes на in-memory storage.
-- **Integration** — реальні Postgres + Redis у Docker, повний flow.
-- **Property-based** (`hypothesis`) — для критичних інваріантів (Money arithmetic, tenant isolation,
-  state machines). Генерує 10000+ випадків, ловить edge cases, які людина не вигадає.
-- **Load** (`locust`) — навантажувальні сценарії на API rate limit, payment flow, dashboard queries.
-- **Stress + Smoke** — окремо.
+- **Integration** — реальні Postgres + Redis у Docker/testcontainers, повний flow.
+- **In-process E2E** — 15 сценаріїв через власний оркестратор: реальні роутери +
+  webhook-app + payment-воркери, мок тільки Telegram API (з fail-closed `USES_EMULATOR`
+  маркером і baseline-інвентарем сценаріїв).
+- **Property-based** (`hypothesis`) — критичні інваріанти (Money arithmetic, tenant isolation,
+  state machines): ~100 examples/test + кастомні стратегії для доменних типів.
+- **Mutation** (`cosmic-ray`) — виживаємість мутантів на критичних модулях.
+- **Load/Chaos** (`locust` + toxiproxy) — навантаження + PgBouncer restart, RLS storm.
 
 Coverage: enforced floor 68% через ratchet у `pyproject.toml`, фактично ~71% по
 репозиторію; критичні модулі (payments, billing, tenant isolation) — вище.
 
-### 🚀 Deployment (5 профілів + Helm)
+### 🚀 Deployment
 
-Docker Compose з профілями:
+**Production-шлях сьогодні — Docker Compose** (7 файлів: base, dev, ci, staging,
+prod, monitoring, multi-instance) з blue-green деплоєм:
 
-- `core` — postgres + redis (для розробки фронтів окремо)
-- `bot` — тільки бот
-- `api` — тільки API
-- `dashboard` — тільки фронт
-- `all` — повний стек
-- Окремо: `docker-compose.monitoring.yml`, `docker-compose.multi-instance.yml` (3 репліки + Sentinel + Nginx LB)
+- `deploy.sh` — atomic color flip (blue↔green), backup БД, scoped rollback
+- In-container readiness-проби (`bot /ready`, `api /readiness`) перед перемиканням
+- `docker-compose.multi-instance.yml` — 3 репліки + Sentinel + Nginx LB (провірено на стенді)
 
-**Kubernetes Helm chart** (`helm/smart-os/`):
-
-- HPA 1-5 реплік (75% CPU/RAM target)
-- PodDisruptionBudget = 1 (zero-downtime rollouts)
-- Pre-install hook: `alembic upgrade head` ДО старту нових подів
-- Security context: `runAsNonRoot: true`, `readOnlyRootFilesystem: true`, `drop: [ALL]` capabilities
-- Liveness + Readiness probes з 4 залежностями
+**Kubernetes/Helm — designed target, deferred:** чарт спроєктований
+(HPA 1-5, PDB=1, pre-install `alembic upgrade head`, security context
+`runAsNonRoot`/`readOnlyRootFilesystem`/`drop [ALL]`, probes на 4 залежності),
+але свідомо відкладений за ADR — тригер ≥100 активних тенантів.
+Зразок значень: [`code/helm_values.yaml`](code/helm_values.yaml) (design target).
 
 ### 🛠 DX (developer experience)
 
 - **uv** як менеджер залежностей (Rust, 10-100× швидше за pip).
-- **Lefthook** pre-commit: ruff check, ruff format, mypy, bandit security scan.
+- **Lefthook** ~25 pre-commit/pre-push hooks: ruff, mypy, semgrep (71 кастомне правило),
+  gitleaks, bandit, tach boundaries, alembic-check, actionlint,
+  OpenAPI→`schema.d.ts` drift-gate за один boot, env-docs/skills-docs regen-gates.
+- **`quality_gate.py`** — один entrypoint для всієї верифікації:
+  пресети `affected` (statics + scoped pytest за diff'ом), `static`, `docs`, `full`;
+  auto-ескалація до повної поверхні при зміні gate-semantics шляхів (ADR-0075/0076).
 - **Conventional Commits** обов'язкові, перевірка на CI.
-- **Versioning**: `core/version.py` як SSoT, `scripts/run.py release sync` для синхронізації.
-- **Feature flags CLI**: `uv run python scripts/run.py dev flags enable <FLAG>` — управління без UI.
+- **Versioning**: `core/version.py` як SSoT.
 
 ### 🧰 Internals
 
 - **Dependency Injection** — typed DI на **Dishka** (`core/di_v2/`, ADR-0048): явні
   lifetimes (app / request-tenant / action / system), fail-closed tenant scopes,
   ~60 типізованих resolver'ів. Legacy `dependency-injector` контейнер видалено.
-- **10 startup-модулів** у `core/startup/` з правильним порядком ініціалізації і teardown.
+- **8 startup-модулів** у `core/startup/` з правильним порядком ініціалізації і teardown.
   Graceful shutdown 30s — drain → close TG session → close pools → exit.
 - **Distributed primitives** на Redis: locks, semaphores, idempotency keys, rate limiters.
-- **structlog + loguru + rich** для logging з trace_id injection.
+- **structlog + rich + OTEL** для logging з trace_id injection.
 - **APScheduler** для billing, reconciliation, cleanup jobs.
-- **61 ADR** документують усі нетривіальні рішення в production-репозиторії (`docs/adr/` та `docs/architecture/`); у цьому showcase опубліковано 17 ключових.
+- **62 ADR** документують усі нетривіальні рішення в основному репозиторії
+  (`docs/adr/`, до ADR-0076); у цьому showcase опубліковано ключові з них.
 
 ---
 
 ## Numbers That Matter
 
-Production-цифри замість декларацій:
+Виміряні цифри замість декларацій. Статус системи — **pre-launch**: навантаження,
+staging і формальна верифікація — вимірювання; «прод-метрик» тут свідомо немає.
 
 | Метрика | Значення | Як виміряно |
 |---|---|---|
@@ -383,18 +412,23 @@ Production-цифри замість декларацій:
 | **Performance degradation під full load** | < 20% | Locust, 1000 концурентних користувачів |
 | **RLS overhead на запит** | < 5% | EXPLAIN ANALYZE до/після, composite-індекси |
 | **p99 DB query duration** | < 50ms | `db_query_duration_seconds` p99, OLTP buckets |
-| **Cross-tenant витоки за 18 міс прода** | 0 | RLS + `@tenant_scoped` + middleware |
-| **Розходження в quarterly reconciliation** | 0 копійок | Excel report, після переходу на basis points |
-| **Час додавання нового White Label бренду** | 5 хв | YAML copy + restart, без релізу |
+| **Cross-tenant витоки** | 0 | TLA+ model checking (`rls_pool.tla`) + in-process RLS isolation probe + Toxiproxy chaos (PgBouncer restart / RLS storm) — staging/load-tested |
+| **Розходження в reconciliation** | 0 копійок | Excel report після переходу на basis points (staging) |
+| **Час додавання нового White Label бренду** | ~5 хв | YAML copy + restart, без релізу |
 | **Час додавання нового бізнес-модуля** | 1-2 дні | `BaseModule` контракт, без змін у ядрі |
-| **Час deploy без downtime** | ~3 хв | Helm rolling update, HPA + PDB |
+| **Deploy без downtime** | blue-green | Compose deploy: atomic color flip + in-container readiness + scoped rollback (staging) |
 | **Coverage** | enforced floor 68% (ratchet), ~71% фактично | pytest --cov, ratchet у `pyproject.toml` |
-| **ADR документів (production)** | 61 | `docs/adr/` + `docs/architecture/` у приватному репозиторії |
-| **ADR опубліковано тут** | 17 | `adr/` у цьому репозиторії |
-| **Бізнес-модулів** | 7 | `core/modules/`, всі через `BaseModule` |
-| **API роутерів** | 44 | FastAPI, OpenAPI auto-generated |
-| **Окремих поверхонь** | 5 | 1 Telegram Bot + 4 фронтенди (порти 3000-3004) |
-| **Telegram FSM-станів** | 50+ | `core/states/`, типобезпечні через `StatesGroup` |
+| **Розмір кодової бази** | ~574k LOC Python + ~64k TS | 977 prod-файлів (~210k) + 1184 test-файлів (~290k) + tooling (~69k) |
+| **ADR документів (основний репо)** | 62 | `docs/adr/` (до ADR-0076) |
+| **Pluggable-модулів у реєстрі** | 7 | 3 бізнес-лінії + платформені можливості, `core/modules/` |
+| **API роутерів** | ~30 + модульні | FastAPI `APIRouter()` + реєстрація через module registry |
+| **Окремих поверхонь** | 7 | 3 Telegram-боти (master/tenant/onboarding) + 4 фронтенди |
+| **Telegram FSM-станів** | 100+ | 32 `StatesGroup`, типобезпечні через aiogram |
+| **Кастомних semgrep-правил** | 71 | `.semgrep/smarthire.yml` — доменні інваріанти, не generic |
+| **Import-linter контрактів** | 11 + tach | `pyproject.toml` — шари domain/core/handlers/infrastructure |
+| **In-process E2E сценаріїв** | 15 | `tests/e2e/` — billing, payments, cross-tenant isolation |
+| **Prometheus-метрик** | ~79 | `core/monitoring/metrics_exporter.py` |
+| **Lefthook-хуків** | ~25 | `lefthook.yml` pre-commit + pre-push |
 
 ---
 
@@ -404,7 +438,7 @@ Production-цифри замість декларацій:
 - **Python 3.12+** — strict typing, modern syntax (PEP 695, match/case)
 - **aiogram 3.31** — Telegram bot framework, native async, FSM
 - **FastAPI 0.143** + **Pydantic v2** — async API, OpenAPI з коробки
-- **aiohttp 3.13** — outbound HTTP (payments, integrations)
+- **aiohttp 3.14** — outbound HTTP (payments, integrations)
 - **SQLAlchemy 2.0 async** + **asyncpg** — type-safe ORM
 - **Alembic** — міграції з expand-contract дисципліною
 - **Dishka 1.10+** — typed DI з явними lifetimes (ADR-0048)
@@ -413,27 +447,28 @@ Production-цифри замість декларацій:
 ### Data
 - **PostgreSQL 16+** — RLS + FORCE, JSONB, `FOR UPDATE SKIP LOCKED` для черг
 - **Redis 7 + Sentinel** — FSM, cache, queue, rate limit, idempotency, pub/sub
-- **cryptography 46** — AES-256 для PII, HMAC для callbacks
+- **cryptography 50** — AES-256 для PII, HMAC для callbacks
 - **sqlglot** — SQL parsing для безпечних admin-запитів
 
 ### Frontend
 - **React 19** + **TypeScript ~5.8** + **Vite**
 - **shadcn/ui** + **TailwindCSS** + **Lucide icons**
 - **TanStack Query** — серверний state management
+- **pnpm + turbo monorepo** — `packages/ui`, `api-client`, `config`, `observability`
 - **JWT в httpOnly cookies** — без localStorage
 
 ### Observability
 - **OpenTelemetry SDK** (OTLP → Tempo)
-- **Prometheus client** + **Grafana** (11 панелей)
+- **Prometheus client** + **Grafana** (3 auto-provisioned dashboards)
 - **Sentry SDK** з PII filter
 - **Better Stack** (Logtail + Uptime + Heartbeat)
 
 ### DevOps
 - **uv** — 10-100× швидше за pip
-- **Docker Compose** — 5 профілів (dev/staging/prod/monitoring/multi-instance)
-- **Kubernetes Helm chart** — HPA, PDB, security context, pre-install migrations
-- **Lefthook** + **ruff** + **mypy strict** + **bandit**
-- **pytest** + **hypothesis** + **locust** + **schemathesis**
+- **Docker Compose** — 7 файлів (dev/ci/staging/prod/monitoring/multi-instance), blue-green
+- **Kubernetes** — designed target, deferred (див. § Deployment)
+- **Lefthook** + **ruff** + **mypy** (baseline ratchet) + **semgrep** + **tach** + **import-linter** + **bandit**
+- **pytest** + **hypothesis** + **cosmic-ray** + **locust** + **toxiproxy** + **schemathesis**
 
 ---
 
@@ -445,8 +480,9 @@ Production-цифри замість декларацій:
 
 **Принципи протоколу:**
 
-1. **Quality gate замість trust.** Task DONE тільки коли пройшли: `ruff check . --fix`,
-   `ruff format .`, `mypy` без помилок, локальні тести змінених модулів зелені.
+1. **Quality gate замість trust.** Task DONE тільки коли пройшли: `ruff check`,
+   `ruff format`, `mypy` (baseline ratchet — нових помилок нуль), semgrep і
+   scoped pytest зміненого дифу — один `quality_gate.py` entrypoint.
    AI не може сказати "готово" без доказів.
 
 2. **ADR before code.** Будь-яка нетривіальна архітектурна зміна починається з ADR.
@@ -462,7 +498,8 @@ Production-цифри замість декларацій:
    явно, чи покритий `@tenant_scoped`. AI не може створити repository без цього.
 
 Повний протокол — у [`.windsurfrules`](.windsurfrules) (~200 рядків інженерних правил).
-Це не магічний промпт, а дисципліна, вироблена за 18 місяців роботи з AI на проді.
+Це не магічний промпт, а дисципліна, вироблена за ~7 місяців роботи з AI-агентами
+над однією кодовою базою.
 
 **Еволюція протоколу (2026).** Дисципліна переросла Windsurf: тепер основний
 репозиторій керується через `AGENTS.md` + **Devin** (Desktop/CLI) з hook-шаром,
@@ -473,9 +510,52 @@ quality gate (`ruff` + `semgrep` + AST-ратчети + pytest). Agent-ready к�
 
 ---
 
+## Engineering Rigor & AI-Agent Guardrails
+
+Найрідкісніша частина проєкту — не сама платформа, а **механізми, що втримують
+~574k LOC, написані переважно AI-агентами, від ентропії й галюцинацій**.
+Один інженер + рій агентів може масштабувати тільки так, якщо правила виконує
+машина, а не обіцянки в промпті.
+
+**Формальна верифікація.** `tests/formal/rls_pool.tla` — TLA+-модель, що доводить:
+зв'язка SQLAlchemy + PgBouncer transaction pooling + PostgreSQL RLS не витікає
+tenant-контекст при конкурентних збоях. Плюс `rls_isolation_probe` —
+in-process зонд, що б'є той же інваріант емпірично, і Toxiproxy-суites
+(PgBouncer restart, RLS storm). «Нуль витоків» тут — наслідок моделі
+й навантажувальних доказів, а не «поки що не помічали».
+
+**Diff-aware quality gate.** `scripts/quality_gate.py` — один entrypoint:
+пресети `affected` (statics + scoped pytest за diff'ом), `static`, `docs`, `full`;
+auto-ескалація до повної поверхні при зміні gate-semantics шляхів (інфра,
+`pyproject.toml`, хуки — ADR-0075/0076); `--min-passed` junit-гарди проти
+«зелений прогін, який нічого не запускав».
+
+**Baseline ratchets.** У кодовій базі на пів мільйона рядків наївне правило
+«0 помилок скрізь» штовхає агента до `# type: ignore` і видалених тестів.
+Тому — монотонні храповики: `mypy_errors.txt` (нових помилок нуль, старі
+зафіксовані), coverage floor 68%, SCC circular imports, broken doc refs,
+E2E scenario inventory. Деградацію блокує храповик, не прогрес-бар.
+
+**Anti-sabotage hooks.** `.devin/hooks/` + parity-тести: `mass-zeroing-deny`,
+`git-junk-deny`, `binary-garbage-deny`, `no_destructive_git` — деструктивні
+git-операції блокуються на рівні інструменту, а не рекомендації в системному
+промпті. Agent-only deny-шари продубльовані для автономних агентів.
+
+**Доменні інваріанти як код.** 71 кастомне semgrep-правило (`asyncio.sleep`
+для синхронізації заборонений, `float` у грошах, канонічні callback-namespaces,
+PII-masking) + 11 import-linter контрактів + `tach` boundary-модель —
+архітектура виконується лінтером, а не пам'яттю.
+
+**Drift-gates.** OpenAPI → `schema.d.ts` регенерація за один boot, env-docs і
+skills-docs regen-gates, api-artifacts parity — документація й контракти не
+можуть мовчки відстати від коду.
+
+---
+
 ## ADR Index
 
-61 архітектурних рішень задокументовано. Найважливіші для розуміння системи:
+62 архітектурних рішення задокументовано у основному репозиторії (до ADR-0076).
+Найважливіші для розуміння системи — опубліковані тут:
 
 | # | Документ | Про що |
 |---|---|---|
@@ -484,9 +564,9 @@ quality gate (`ruff` + `semgrep` + AST-ратчети + pytest). Agent-ready к�
 | 0014 | [Money as Basis Points](adr/0014_money_basis_points.md) | `int` копійки + bp |
 | 0019 | [Payment Idempotency](adr/0019_payment_idempotency.md) | HMAC + Redis SETNX + reconciliation |
 | 0021 | [White Label Configuration](adr/0021_white_label.md) | YAML vs DB-backed brands |
-| 0023 | [PII Encryption Strategy](adr/0023_pii_encryption.md) | AES-256 + ключ + сіль |
-| 0025 | [Feature Flags as Kill-Switch](adr/0025_feature_flags.md) | Per-tenant runtime toggles |
-| 0028 | [Zero-Downtime Deployments](adr/0028_zero_downtime_deployments.md) | Helm + expand-contract |
+| 0022 | [PII Encryption Strategy](adr/0022_pii_encryption.md) | AES-256 + ключ + сіль |
+| 0031 | [Feature Flags as Kill-Switch](adr/0031_feature_flags.md) | Per-tenant runtime toggles |
+| 0033 | [Zero-Downtime Deployments](adr/0033_zero_downtime_deployments.md) | Blue-green + expand-contract |
 | 0032 | [Service Layer Enforcement](adr/0032_service_layer_enforcement.md) | Headless: handler ↛ DB |
 | 0048 | [Typed Dependency Injection](adr/0048_typed_dependency_injection.md) | Dishka, явні lifetimes, fail-closed scopes |
 | 0069 | [Canonical Exception Hierarchy](adr/0069_canonical_exception_hierarchy.md) | Один class object на ім'я |
@@ -526,22 +606,26 @@ Schema-per-tenant ламається на міграціях. Shared schema + RL
 <details>
 <summary><strong>Скільки тенантів тримає один runtime?</strong></summary>
 
-1000+ без degradation > 20%. Bottleneck — connection pool до Postgres,
-далі масштабується через K8s HPA горизонтально.
+1000+ без degradation > 20% (load-tested). Bottleneck — connection pool до Postgres;
+подальше масштабування — горизонтальне (K8s-ціль спроєктована, відкладена до
+триггера ≥100 активних тенантів).
 </details>
 
 <details>
 <summary><strong>Як захищені персональні дані?</strong></summary>
 
-AES-256 у БД, `mask_pii()` у логах, Pydantic-валідація на вході,
-окрема `analytics_readonly` роль з `BYPASSRLS` + audit log.
+AES-256 у БД, `mask_pii()` у логах, Pydantic-валідація на вході. Додатково:
+app-процеси з'єднуються під роллю `smarthire_app` (**NOBYPASSRLS**) через
+PgBouncer transaction pooling — навіть компрометація коду не знімає RLS;
+окрема provisioning-роль для DDL/міграцій.
 </details>
 
 <details>
-<summary><strong>Чому 4 окремі фронтенди, а не один?</strong></summary>
+<summary><strong>Чому 3 боти + 4 фронтенди, а не одна поверхня?</strong></summary>
 
-Різні аудиторії (суперадмін, клієнт, новий тенант, devops), різні циклі релізів,
-різні security вимоги. Один Dashboard на всіх — антипатерн.
+Різні аудиторії (суперадмін, тенант, новий клієнт, кандидат), різні циклі релізів,
+різні security вимоги. Onboarding-хендлери навіть не імпортуються в master/tenant
+роутери — помилка в поверхні реєстрації не торкається живих тенантів.
 </details>
 
 <details>

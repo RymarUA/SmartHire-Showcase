@@ -1,0 +1,11 @@
+# Project-level indexes take precedence over the global user config
+# (AppData/Roaming/uv/uv.toml), which adds a Safety CLI private registry as an
+# extra index. Declaring PyPI here as a normal index makes it the FIRST index
+# consulted, so `uv lock` resolves from pypi.org — not pkgs.safetycli.com.
+# (Do NOT mark it `default = true`: a default index is the fallback queried
+# LAST, which would let the global Safety mirror win again.)
+index-strategy = "first-index"
+
+[[index]]
+name = "pypi"
+url = "https://pypi.org/simple"

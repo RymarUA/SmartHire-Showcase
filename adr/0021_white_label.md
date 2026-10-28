@@ -50,7 +50,7 @@ ENV override → DB config (if enabled) → YAML file → platform defaults
 - New brand in 5 minutes without code change or release.
 - DB-backed mode allows Dashboard self-service by tenant admins.
 - Fallback chain prevents runtime errors if DB is temporarily unavailable.
-- YAML configs are code-reviewed → no accidental mis-configuration in production.
+- YAML configs are code-reviewed → accidental mis-configuration is caught at review, not by tenants.
 
 ### Negative
 - DB-backed mode introduces eventual consistency (up to 60s cache TTL).
@@ -60,4 +60,4 @@ ENV override → DB config (if enabled) → YAML file → platform defaults
 ## References
 
 - ADR-001: Multi-Tenant Architecture (white label is per-tenant, resolved by `tenant_id`).
-- ADR-0025: Feature Flags as Kill-Switch (`WHITE_LABEL_ENABLED` is itself a feature flag).
+- ADR-0031: Feature Flags as Kill-Switch (`WHITE_LABEL_ENABLED` is itself a feature flag).

@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Tooling caches
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.bandit
+
+# uv / pip artifacts (lockfile IS committed for reproducible CI)
+pip-wheel-metadata/
+
+# Node (landing/assets if any)
+node_modules/
+
+# Editors / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Local env — never commit secrets
+.env
+.env.*
+!.env.example

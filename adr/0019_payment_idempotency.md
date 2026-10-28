@@ -51,7 +51,8 @@ Webhook is a fast-path optimization. Reconciliation is the source of truth.
 ## Consequences
 
 ### Positive
-- Zero duplicate payments in production since adoption.
+- Duplicate processing is prevented by construction: signature check → SETNX claim →
+  reconciliation catch-up (verified in staging + property tests).
 - Missed webhooks are caught within 24h max (next reconciliation cycle).
 - Excel report gives operators full audit trail without DB access.
 

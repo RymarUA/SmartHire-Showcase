@@ -1,6 +1,24 @@
 # Infrastructure & Deployment
 
-SmartHire supports multiple deployment options: Docker Compose for development, and Kubernetes Helm for production.
+SmartHire deployment today is **Docker Compose with blue-green deploys**.
+Kubernetes/Helm is a designed target — deliberately deferred by ADR until
+the scale trigger (~100 active tenants) makes the ops tax worth it.
+
+## Production Path: Blue-Green Compose
+
+Two color instances (bot/api) run behind the edge proxy; `deploy.sh`
+handles the flip:
+
+1. Detect the live color (queries both instances — ambiguous state refuses
+   rather than guesses).
+2. Bring up the other color with the new image.
+3. **In-container readiness probes** (`bot /ready`, `api /readiness`) —
+   the health gate measures the fleet being deployed, not a proxy 200.
+4. DB backup, atomic switch, scoped rollback on failure.
+
+Compose files per environment: `docker-compose.yml` (base + profiles),
+`.dev`, `.ci`, `.staging`, `.prod`, `.monitoring`, `.multi-instance`
+(3 replicas + Sentinel + Nginx LB — validated on a bench stack).
 
 ## Docker Compose (Development)
 
@@ -23,7 +41,7 @@ docker compose --profile all up -d
 | Service | Port | Purpose |
 |---------|------|---------|
 | postgres | 5500 | PostgreSQL 16 |
-| redis | 6379 | Redis 7 (cache, rate limit, FSM) |
+| redis | 6379 | Redis 7 (cache, rate limit, FSM, distributed locks) |
 | bot | 8443 | Telegram bot (aiogram) |
 | api | 8000 | FastAPI REST API |
 
@@ -39,10 +57,10 @@ docker compose -f docker-compose.monitoring.yml up -d
 # - Tempo (traces): http://localhost:3200
 ```
 
-### Monitoring Stack
+### Monitoring Stack (sketch)
 
 ```yaml
-# docker-compose.monitoring.yml
+# docker-compose.monitoring.yml (excerpt)
 services:
   prometheus:
     image: prom/prometheus:v2.53.0
@@ -68,14 +86,17 @@ services:
       - "3200:3200"
 ```
 
-## Kubernetes (Production)
+## Kubernetes (designed target — deferred)
 
-SmartHire uses Helm for Kubernetes deployment with auto-scaling and zero-downtime rollouts.
+The platform is designed K8s-native (stateless app pods, externalized state,
+readiness probes, expand-contract migrations) but the Helm chart is **not
+deployed today** — it activates when tenant count justifies the ops cost.
+The values below are the *design target*, not a production export.
 
-### Helm Chart Structure
+### Designed Chart Structure
 
 ```
-helm/smart-os/
+helm/smart-os/            # design target — not shipped
 ├── Chart.yaml
 ├── values.yaml
 ├── templates/
@@ -89,10 +110,10 @@ helm/smart-os/
     └── test-connection.yaml
 ```
 
-### Key Features
+### Target Values (excerpt)
 
 ```yaml
-# values.yaml
+# code/helm_values.yaml — design target values
 replicaCount: 3
 
 autoscaling:
@@ -133,30 +154,10 @@ readinessProbe:
   periodSeconds: 5
 ```
 
-### Deployment Commands
-
-```bash
-# Install
-helm install smarthire helm/smart-os/ \
-  --namespace smarthire \
-  --create-namespace \
-  --values helm/smart-os/values.yaml
-
-# Upgrade
-helm upgrade smarthire helm/smart-os/ \
-  --namespace smarthire \
-  --values helm/smart-os/values.yaml
-
-# Uninstall
-helm uninstall smarthire --namespace smarthire
-```
-
-### Pre-install Hook (Migrations)
-
-The Helm chart includes a pre-install hook that runs database migrations before deployment:
+### Designed Pre-install Hook (Migrations)
 
 ```yaml
-# templates/job-migrations.yaml
+# Design target: run migrations before new pods start
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -173,12 +174,9 @@ spec:
       restartPolicy: OnFailure
 ```
 
-### PodDisruptionBudget
-
-Ensures zero-downtime rollouts:
+### Designed PodDisruptionBudget
 
 ```yaml
-# templates/pdb.yaml
 apiVersion: policy/v1
 kind: PodDisruptionBudget
 metadata:
@@ -211,6 +209,6 @@ spec:
 
 ## References
 
-- Docker Compose: `docker-compose.yml`
+- Docker Compose: `docker-compose.yml` (+ `.dev/.ci/.staging/.prod/.monitoring/.multi-instance`)
 - Monitoring: `docker-compose.monitoring.yml`
-- Helm Chart: `helm/smart-os/`
+- K8s design values: `code/helm_values.yaml`

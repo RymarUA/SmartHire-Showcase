@@ -15,7 +15,6 @@ from uuid import UUID, uuid4
 from core.domain.errors import AnketaNotFoundError, TenantPermissionError
 from core.repositories.interfaces import AnketaRepository, AuditLogRepository
 
-
 # ---------------------------------------------------------------------------
 # Domain value objects
 # ---------------------------------------------------------------------------

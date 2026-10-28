@@ -1,4 +1,4 @@
-# ADR-0028: Zero-Downtime Deployments via Helm + Expand-Contract
+# ADR-0033: Zero-Downtime Deployments — Blue-Green + Expand-Contract
 
 **Status:** Accepted  
 **Date:** 2025-04-22  
@@ -12,7 +12,15 @@ addition without a default instantly breaks old pods still running during a roll
 
 ## Decision
 
-### Kubernetes Helm Chart Design
+Today deploys run as **blue-green Docker Compose flips**:
+two color instances behind the edge proxy, `deploy.sh` brings up the idle
+color, gates it on in-container readiness (`bot /ready`, `api /readiness`),
+flips atomically, and rolls back scoped on failure.
+
+The Kubernetes path below is the **designed target** — deferred until the
+scale trigger (~100 active tenants) justifies the ops cost.
+
+### Kubernetes Helm Chart (designed target — not deployed)
 
 ```yaml
 # helm/smart-os/values.yaml (excerpt)
@@ -69,10 +77,11 @@ A pod is not added to the load balancer until all 4 dependencies respond.
 ## Consequences
 
 ### Positive
-- Zero downtime deploys measured over 40+ production releases.
-- Rolling update takes ~3 minutes (HPA + PDB ensure continuity).
+- Blue-green flips are exercised on the staging/bench stack
+  (`docker-compose.multi-instance.yml` — 3 replicas + Sentinel + Nginx LB).
 - Expand-contract prevents "migration of death" that kills running pods.
-- Security context: `runAsNonRoot: true`, `readOnlyRootFilesystem: true`, `drop: [ALL]`.
+- Designed K8s security context: `runAsNonRoot: true`,
+  `readOnlyRootFilesystem: true`, `drop: [ALL]`.
 
 ### Negative
 - 3-release cycle slows down breaking schema changes.

@@ -6,6 +6,13 @@ on:
   push:
     branches: [main]
 
+# This repository is a curated showcase: code/ contains sanitized excerpts,
+# not a runnable application — internal imports (core.*, handlers/*) do not
+# resolve here by design. CI therefore runs the checks that are meaningful
+# on excerpts: ruff lint + bandit security scan. Type-checking, tests, and
+# the full quality gate (ruff+semgrep+mypy+pytest+drift gates) run in the
+# private repository where the codebase lives.
+
 jobs:
   lint:
     name: Lint (ruff)
@@ -22,44 +29,6 @@ jobs:
 
       - name: Run ruff
         run: uv run ruff check .
-
-  type-check:
-    name: Type Check (mypy)
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
-
-      - name: Sync dependencies
-        run: uv sync --frozen --group dev
-
-      - name: Run mypy
-        run: uv run mypy code/ --ignore-missing-imports
-
-  test:
-    name: Tests (pytest)
-    runs-on: ubuntu-latest
-    services:
-      redis:
-        image: redis:7-alpine
-        ports:
-          - 6379:6379
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v5
-
-      - name: Sync dependencies
-        run: uv sync --frozen --group dev
-
-      - name: Run pytest
-        run: uv run pytest code/ -v
 
   security:
     name: Security (bandit)

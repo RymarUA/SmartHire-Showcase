@@ -1,6 +1,9 @@
 # Module Federation Architecture
 
-SmartHire uses a pluggable module system that allows adding new business directions (catalog, booking, shop, billing, recruiting, support) in **1-2 days** without modifying the core.
+SmartHire uses a pluggable module system with **7 registered modules** —
+3 business lines (shop, booking, recruiting) plus platform capabilities
+(billing, support, shifts, catalog). A new direction plugs in **1-2 days**
+without modifying the core.
 
 ## Core Concept
 
@@ -57,7 +60,8 @@ ModuleRegistry.register("shop", ShopModule)
 ### 2. Setup (at startup)
 
 ```python
-async def setup_modules(dp: Dispatcher, container: Container):
+# container = Dishka container (core/di_v2/, ADR-0048)
+async def setup_modules(dp: Dispatcher, container: AsyncContainer):
     for module_id, module_class in ModuleRegistry.get_all():
         module = module_class()
         if await module.is_active(tenant_id):

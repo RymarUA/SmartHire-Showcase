@@ -12,10 +12,11 @@ New decisions follow `docs/adr/template.md` from the private repository.
 | 0014 | [0014_money_basis_points.md](0014_money_basis_points.md) | Integer kopecks + basis points; `float` banned in `core/payments/` | Accepted |
 | 0019 | [0019_payment_idempotency.md](0019_payment_idempotency.md) | HMAC + Redis SETNX + daily reconciliation for exactly-once payments | Accepted |
 | 0021 | [0021_white_label.md](0021_white_label.md) | YAML-first config with optional DB-backed dynamic overrides | Accepted |
+| 0022 | [0022_pii_encryption.md](0022_pii_encryption.md) | PII encryption + masking strategy | Accepted |
 | 0023 | [0023_frontend_backend_contract.md](0023_frontend_backend_contract.md) | Frontend/backend contract: OpenAPI, TanStack Query, httpOnly JWT | Accepted |
-| 0025ff | [0025_feature_flags.md](0025_feature_flags.md) | Per-tenant feature flags as runtime kill-switch | Accepted |
-| 0025pg | [0025_postgresql_partitioning.md](0025_postgresql_partitioning.md) | PostgreSQL table partitioning strategy for high-volume tables | Accepted |
-| 0028 | [0028_zero_downtime_deployments.md](0028_zero_downtime_deployments.md) | Helm HPA+PDB + expand-contract migration discipline | Accepted |
+| 0025 | [0025_postgresql_partitioning.md](0025_postgresql_partitioning.md) | PostgreSQL table partitioning strategy for high-volume tables | Accepted |
+| 0031 | [0031_feature_flags.md](0031_feature_flags.md) | Per-tenant feature flags as runtime kill-switch | Accepted |
+| 0033 | [0033_zero_downtime_deployments.md](0033_zero_downtime_deployments.md) | Blue-green deploys + expand-contract migration discipline; K8s HPA/PDB as designed target | Accepted |
 | 0030 | [0030_multitenancy_hardening.md](0030_multitenancy_hardening.md) | Multi-tenancy hardening: RLS FORCE + `@tenant_scoped` + middleware | Accepted |
 | 0032 | [0032_service_layer_enforcement.md](0032_service_layer_enforcement.md) | Headless service layer: handlers never import from `database/` | Accepted |
 | 0048 | [0048_typed_dependency_injection.md](0048_typed_dependency_injection.md) | Typed DI on Dishka: explicit lifetimes, fail-closed tenant scopes; legacy container removed | Completed |
@@ -26,7 +27,7 @@ New decisions follow `docs/adr/template.md` from the private repository.
 
 ## Numbering Convention
 
-Production numbering is continuous (`001`–`0075`+). Rough bands:
+Main-repo numbering is continuous (`001`–`0076`+). Rough bands:
 
 - `001`–`009`: Foundational architecture (tenancy, modules, data model)
 - `0010`–`0019`: Data & storage decisions

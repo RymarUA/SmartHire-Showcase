@@ -8,9 +8,12 @@ States: trial, active, grace_period, paused, cancelled
 - cancelled is terminal (absorbing state)
 """
 
+import logging
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from typing import Any
+
+logger = logging.getLogger(__name__)
 
 TRIAL_DAYS = 14
 GRACE_PERIOD_DAYS = 3
@@ -292,7 +295,12 @@ class SubscriptionStateMachine:
                     {"status": self._previous_state},
                 )
             except Exception:
-                pass
+                # Compensation is best-effort: the saga retry loop owns
+                # recovery. Still never swallow silently — log for the alert.
+                logger.warning(
+                    "billing_compensation_failed",
+                    extra={"tenant_id": self.tenant_id, "trigger": trigger_name},
+                )
 
     # ── Helpers ─────────────────────────────────────────────────────────────
 
@@ -304,7 +312,8 @@ class SubscriptionStateMachine:
             elif hasattr(self.cache, "delete"):
                 await self.cache.delete(f"tenant:{self.tenant_id}")
         except Exception:
-            pass
+            # Cache invalidation is best-effort — the TTL is the backstop.
+            logger.warning("billing_cache_invalidation_failed")
 
 
 __all__ = [

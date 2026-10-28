@@ -32,10 +32,10 @@ price_kopecks = int(Decimal("49.99") * 100)
 ## Consequences
 
 ### Positive
-- Zero rounding errors in 18 months of production after migration.
-- Quarterly reconciliation: 0 kopeck discrepancy since ADR adoption.
+- Rounding errors are structurally impossible — all money math is exact integer arithmetic.
+- Reconciliation compares integers — no float epsilon drift between sources.
 - Basis-point commissions are exact integer arithmetic: `amount * bp // 10_000`.
-- `hypothesis`-generated property tests cover 10 000+ amount combinations.
+- `hypothesis`-based property tests fuzz amount arithmetic (round-trip, ordering, boundary values).
 
 ### Negative
 - All display code must convert kopecks → UAH string at the last moment.
@@ -44,7 +44,7 @@ price_kopecks = int(Decimal("49.99") * 100)
 
 ## Migration
 
-Existing `NUMERIC(10,2)` columns converted to `BIGINT` via expand-contract (ADR-0028):
+Existing `NUMERIC(10,2)` columns converted to `BIGINT` via expand-contract (ADR-0033):
 - Expand: add `amount_kopecks BIGINT`, backfill `= ROUND(amount * 100)`.
 - Contract: drop `amount` column after 2 releases.
 
@@ -52,4 +52,4 @@ Existing `NUMERIC(10,2)` columns converted to `BIGINT` via expand-contract (ADR-
 
 - `code/money.py` — `to_kopecks()`, `validate_amount()`, `compare_amounts()`.
 - ADR-0019: Payment Idempotency (reconciliation depends on integer comparison).
-- ADR-0028: Zero-Downtime Deployments (column migration strategy).
+- ADR-0033: Zero-Downtime Deployments (column migration strategy).

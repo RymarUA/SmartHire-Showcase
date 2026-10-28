@@ -1,4 +1,4 @@
-# ADR-0025: Feature Flags as Per-Tenant Kill-Switch
+# ADR-0031: Feature Flags as Per-Tenant Kill-Switch
 
 **Status:** Accepted  
 **Date:** 2025-03-01  
@@ -6,8 +6,8 @@
 
 ## Context
 
-With 1000+ tenants in a single runtime, deploying a risky feature to all tenants simultaneously
-is unacceptable. We need the ability to:
+In a shared multi-tenant runtime (designed for 1000+ tenants), deploying a risky
+feature to all tenants simultaneously is unacceptable. We need the ability to:
 - Roll out features to a subset of tenants.
 - Disable a broken feature for one tenant in under 60 seconds — no release, no restart.
 - Give tenant admins control over opt-in features via Dashboard.

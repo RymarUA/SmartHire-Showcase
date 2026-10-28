@@ -3,57 +3,77 @@
 ## Identity & Stack
 
 Role: Senior Python Developer & QA Automation Engineer.
-Stack: Python 3.12+, `uv`, Aiogram 3.x, SQLAlchemy 2.0 (async), React 19/TS.
+Stack: Python 3.12+, `uv`, Aiogram 3.31, SQLAlchemy 2.0 (async), FastAPI, React 19/TS.
 
 ## Coding Standards
 
 1. **Type Hints**: 100% type hinting. Use `|` instead of `Union`.
-2. **Exceptions**: Never use `except Exception: pass`. Use `with contextlib.suppress()`.
+2. **Exceptions**: No silent `except Exception: pass` — specific types + `logger`.
+   `contextlib.suppress` only for narrow types (idempotent Telegram delete/edit
+   is the allowlist precedent).
 3. **Docstrings**: Google-style docstrings for every class and public function.
 4. **Imports**: Standard library first, third-party second, local imports last.
-5. **Strings**: Use f-strings everywhere.
-6. **Pydantic V2**: Use `model_validate`, `model_dump`, `model_dump_json`.
+5. **Strings**: f-strings everywhere.
+6. **Pydantic V2**: `model_validate`, `model_dump`, `model_dump_json`.
+7. **No `asyncio.sleep` for synchronization** — Event/Lock/Condition;
+   backoff/polling only with explicit justification.
 
-## Architecture Constraints
+## Architecture Constraints (red lines)
 
-1. **Service Layer**: Handlers NEVER touch DB directly. Use repositories via DI.
-2. **DI**: Use `dependency-injector`. No global service imports.
-3. **Multi-Tenancy**: Always include `tenant_id`. Use `TenantQueryBuilder`.
-4. **Security**: No raw PII in logs. Use masking functions.
-5. **Feature Flags**: Check `is_enabled()` before business logic.
-6. **DRY / Canonical Imports**: Shared utilities live in `core/shared/`. Handlers re-export from there, never duplicate. Example: `send_temporary_notification` → canonical in `core/shared/handler_utils.py`, re-exported in `handlers/common/__init__.py`.
+1. **Service Layer**: Handlers NEVER touch DB directly — repositories via DI.
+2. **DI**: Typed DI via **Dishka** (`core/di_v2/`, ADR-0048) — explicit lifetimes
+   (app / request-tenant / action / system), fail-closed tenant scopes.
+   The legacy `dependency-injector` container was fully removed.
+3. **Multi-Tenancy**: `tenant_id` always explicit. `@tenant_scoped` +
+   `TenantQueryBuilder`; Redis isolation via **domain/tenancy key prefixes**
+   (never `REDIS_DB` index switching).
+4. **Security**: No raw PII in logs — `mask_pii()`.
+5. **Feature Flags**: `is_enabled()` before business logic.
+6. **Surfaces**: Master / Tenant / Onboarding bots are **separate entry points** —
+   never import onboarding handlers into Master/Tenant routers.
+7. **Role resolution**: SUPERADMIN > TENANT_ADMIN > TENANT_STAFF > END_USER;
+   PROSPECT only under the onboarding sentinel.
+8. **Domain purity**: `domain/` imports nothing from core/, handlers/,
+   infrastructure/, db/.
+9. **Callback namespaces**: canonical `CallbackData` subclasses only — never
+   invent a prefix (`ta:`, `staff:`, `mod:`, `ob_*`, `dev_hub:`, `gd:`, …).
 
 ## Workflow
 
 When modifying files:
-1. Plan Phase: Output step-by-step plan before writing code.
-2. Code Phase: Write code adhering to standards.
-3. Check Phase: Run `ruff check --fix` and `ruff format`.
-4. Test Phase: Run `pytest` for the changed module.
+1. Plan Phase: output step-by-step plan before writing code.
+2. Code Phase: write code adhering to standards.
+3. Check Phase: `ruff check --fix` + `ruff format` + `semgrep`.
+4. Test Phase: `pytest` for the changed module — scoped, not full-suite.
 
 ## Circuit Breaker
 
-- **Linters**: Max 2 consecutive failed attempts.
-- **Tests**: Max 3 consecutive failed attempts.
-If limits reached, STOP and ask for guidance.
+- **Linters**: max 2 consecutive failed attempts.
+- **Tests**: max 3 consecutive failed attempts.
+If limits reached, STOP and ask for guidance. When ≥2 consecutive failures share
+one gate, the shared assumption is the suspect — state it and remove it first.
 
 ## Testing Rules
 
 - Framework: `pytest` + `pytest-asyncio`.
-- Database: Real SQLite `:memory:` or Testcontainers. NO MagicMock for DB.
+- Database: real SQLite `:memory:` or testcontainers — NO MagicMock for DB.
 - External APIs: `AsyncMock` only.
-- Property-Based (`hypothesis`): Mandatory for billing math and tenant isolation.
+- Property-Based (`hypothesis`): mandatory for billing math and tenant isolation.
 
 ## Quality Gate
 
 Task is DONE only when:
-1. `ruff check . --fix` and `ruff format .` pass.
-2. Local tests for the changed module are green.
-3. `mypy` passes without errors.
+1. `ruff check` + `ruff format` + `semgrep` pass on changed files.
+2. Scoped tests for the changed module are green.
+3. `quality_gate.py` exits 0 — affected-preset by default; gate-semantics
+   paths escalate to the full surface automatically.
+4. `mypy` — baseline ratchet: zero NEW errors (`mypy_errors.txt` ledger).
 
 ## Anti-Hallucination
 
-- **Type Checking**: Run mypy before commit.
-- **Linting**: Run ruff before commit.
-- **Testing**: Run pytest before commit.
-- **Code Review**: Always review your own changes.
+- **Verification over trust**: type check + lint + tests before "done".
+- **Ratchets, not progress bars**: monotonic baselines block regression;
+  agents cannot "fix" a check by deleting tests or adding ignores.
+- **Deny layers, not instructions**: destructive git ops are blocked by the
+  tool layer (`.devin/hooks`), not by convention.
+- **Code Review**: always review your own changes.

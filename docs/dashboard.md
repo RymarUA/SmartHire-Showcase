@@ -107,20 +107,18 @@ export function TenantsPage() {
 
 ```typescript
 // src/api/client.ts
-const client = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
-  withCredentials: true, // Send cookies
-});
-
-client.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      window.location.href = "/login";
-    }
-    return Promise.reject(error);
+async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}${path}`, {
+    credentials: "include", // httpOnly cookies, not localStorage
+    ...init,
+  });
+  if (res.status === 401) {
+    window.location.href = "/login";
+    throw new Error("Unauthorized");
   }
-);
+  if (!res.ok) throw new Error(`API ${res.status}`);
+  return res.json() as Promise<T>;
+}
 ```
 
 ## Component Example (shadcn/ui)
@@ -150,17 +148,19 @@ export { Card, CardHeader, CardTitle, CardContent };
 
 ## Running Dashboard
 
+Frontends live in a pnpm + turbo monorepo (`packages/ui`, `api-client`,
+`config`, `observability` shared across all four apps):
+
 ```bash
-cd dashboard
-npm install
-npm run dev  # http://localhost:3000
+pnpm install --frozen-lockfile   # at repo root
+pnpm --filter dashboard dev      # http://localhost:3000
 ```
 
 ## Building for Production
 
 ```bash
-npm run build
-# Output: dist/
+pnpm --filter dashboard build
+# Output: dashboard/dist/
 ```
 
 ## References

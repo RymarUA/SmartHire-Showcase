@@ -10,13 +10,12 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from enum import Enum
+from enum import StrEnum
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from fastapi import APIRouter
-
     from core.container import Container
+    from fastapi import APIRouter
 
 
 # ---------------------------------------------------------------------------
@@ -24,7 +23,7 @@ if TYPE_CHECKING:
 # ---------------------------------------------------------------------------
 
 
-class ModuleStatus(str, Enum):
+class ModuleStatus(StrEnum):
     """Health status of a single module.
 
     Args:

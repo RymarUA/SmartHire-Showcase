@@ -85,8 +85,8 @@ def validate_liqpay_signature(
     """
     import base64
 
-    raw = f"{private_key}{data_b64}{private_key}".encode("utf-8")
-    expected = base64.b64encode(hashlib.sha1(raw).digest()).decode("utf-8")  # noqa: S324
+    raw = f"{private_key}{data_b64}{private_key}".encode()
+    expected = base64.b64encode(hashlib.sha1(raw).digest()).decode("utf-8")  # noqa: S324  # nosec B324
 
     if not hmac.compare_digest(expected, received_signature):
         logger.warning("LiqPay signature mismatch — possible spoofing attempt")
