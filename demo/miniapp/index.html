@@ -6,8 +6,8 @@
 <meta name="robots" content="noindex">
 <title>Mini App «Примірник» — демо</title>
 <style>
-  @font-face { font-family: "Geist"; src: url("../assets/fonts/geist-latin.woff2") format("woff2"); font-weight: 100 900; font-style: normal; font-display: swap; unicode-range: U+0000-00FF; }
-  @font-face { font-family: "Geist"; src: url("../assets/fonts/geist-cyrillic.woff2") format("woff2"); font-weight: 100 900; font-style: normal; font-display: swap; unicode-range: U+0400-04FF; }
+  @font-face { font-family: "Geist"; src: url("../../assets/fonts/geist-latin.woff2") format("woff2"); font-weight: 100 900; font-style: normal; font-display: swap; unicode-range: U+0000-00FF; }
+  @font-face { font-family: "Geist"; src: url("../../assets/fonts/geist-cyrillic.woff2") format("woff2"); font-weight: 100 900; font-style: normal; font-display: swap; unicode-range: U+0400-04FF; }
 
   :root {
     --primary: #4f46e5;
@@ -93,6 +93,8 @@
   .tab .bdg { position: absolute; top: 0; margin-left: 22px; background: var(--primary); color: #fff; font-size: 8px; font-weight: 700; border-radius: 999px; padding: 0 5px; }
 
   .foot { margin-top: 14px; font-size: 11px; color: var(--soft); }
+  .dtoast { position: fixed; bottom: 18px; left: 50%; transform: translate(-50%, 60px); background: #0f172a; color: #fff; font-size: 13px; font-weight: 600; border-radius: 12px; padding: 11px 20px; z-index: 60; transition: transform .25s cubic-bezier(.2,.9,.3,1.2); pointer-events: none; box-shadow: 0 10px 24px rgba(15,23,42,.3); }
+  .dtoast.show { transform: translate(-50%, 0); }
 </style>
 </head>
 <body>
@@ -123,8 +125,15 @@
 </div>
 
 <div class="foot">Вигадані дані — демонстрація інтерфейсу · натисніть вкладки знизу</div>
+<div class="dtoast" id="dtoast"></div>
 
 <script>
+let _dt;
+function demoToast(m) {
+  const t = document.getElementById("dtoast");
+  t.textContent = m; t.classList.add("show");
+  clearTimeout(_dt); _dt = setTimeout(() => t.classList.remove("show"), 2000);
+}
 const ORDERS = [
   { id: 1042, client: "Олена К.", items: "Сукня міді «Терен» ×1", sum: 2290, status: "у роботі", cls: "st-work", time: "сьогодні 12:24" },
   { id: 1041, client: "Марко В.", items: "Тренч «Пісок» ×1", sum: 3590, status: "нове", cls: "st-new", time: "сьогодні 10:11" },
@@ -174,7 +183,7 @@ const PAGES = {
       <div class="row"><div class="ic">${orderIcon}</div>
         <div><div class="t">${g.name}</div><div class="s">${g.stock} шт · ${fmt(g.price)}</div></div>
         <button class="switch${g.on ? " on" : ""}" onclick="event.stopPropagation();this.classList.toggle('on')"></button></div>`).join("")}
-    <button class="btn btn-p" style="width:100%;margin-top:8px" onclick="alert('Демо: форма нового товару')">+ Додати товар</button>`,
+    <button class="btn btn-p" style="width:100%;margin-top:8px" onclick="demoToast('Демо: форма нового товару')">+ Додати товар</button>`,
   more: () => `
     <div class="greet">Ще</div>
     <div class="greet-sub">сповіщення та налаштування</div>
