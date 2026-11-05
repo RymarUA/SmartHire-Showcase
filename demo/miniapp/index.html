@@ -29,19 +29,23 @@
   .caption { font-size: 12px; color: var(--soft); margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
   .demo-pill { font-size: 9.5px; font-weight: 700; letter-spacing: .6px; color: #d97706; background: #fffbeb; border: 1px solid #fde68a; border-radius: 999px; padding: 2px 8px; }
 
-  /* ── Phone frame ── */
   .phone { width: 330px; border-radius: 40px; background: #0f172a; padding: 10px; box-shadow: 0 24px 48px -12px rgba(15,23,42,.35), 0 0 0 1px #334155; }
   .notch { width: 110px; height: 22px; background: #0f172a; border-radius: 0 0 14px 14px; margin: -10px auto 0; position: relative; z-index: 2; }
-  .screen { background: var(--tg-bg); border-radius: 32px; overflow: hidden; color: var(--tg-text); font-size: 13px; }
+  .screen { background: var(--tg-bg); border-radius: 32px; overflow: hidden; color: var(--tg-text); font-size: 13px; height: 560px; display: flex; flex-direction: column; }
 
-  .tg-head { display: flex; align-items: center; gap: 9px; padding: 12px 14px 10px; background: var(--tg-panel); border-bottom: 1px solid rgba(255,255,255,.05); }
+  .tg-head { display: flex; align-items: center; gap: 9px; padding: 12px 14px 10px; background: var(--tg-panel); border-bottom: 1px solid rgba(255,255,255,.05); flex-shrink: 0; }
   .tg-ava { width: 30px; height: 30px; border-radius: 50%; background: var(--primary); color: #fff; font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
   .tg-title { font-size: 13px; font-weight: 700; }
   .tg-sub { font-size: 10.5px; color: var(--green); display: flex; align-items: center; gap: 4px; }
   .tg-sub::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--green); }
   .tg-dots { margin-left: auto; color: var(--tg-soft); letter-spacing: 2px; font-weight: 700; }
 
-  .tg-body { padding: 12px 12px 8px; }
+  .pages { flex: 1; overflow-y: auto; overflow-x: hidden; }
+  .pages::-webkit-scrollbar { width: 4px; }
+  .pages::-webkit-scrollbar-thumb { background: rgba(255,255,255,.12); border-radius: 2px; }
+  .page { display: none; padding: 12px 12px 8px; }
+  .page.active { display: block; }
+
   .greet { font-size: 14.5px; font-weight: 700; margin-bottom: 2px; }
   .greet-sub { font-size: 11px; color: var(--tg-soft); margin-bottom: 12px; }
 
@@ -52,22 +56,41 @@
   .kpi .d { font-size: 10px; font-weight: 700; color: var(--green); margin-top: 2px; }
 
   .sect { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .7px; color: var(--tg-soft); margin: 12px 0 6px; }
-  .row { background: var(--tg-panel); border-radius: 12px; padding: 10px 12px; display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .row { background: var(--tg-panel); border-radius: 12px; padding: 10px 12px; display: flex; align-items: center; gap: 10px; margin-bottom: 6px; cursor: pointer; transition: background .12s; }
+  .row:hover { background: #28374a; }
   .row .ic { width: 28px; height: 28px; border-radius: 8px; background: rgba(82,136,193,.15); color: var(--tg-accent); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
   .row .ic svg { width: 14px; height: 14px; }
   .row .t { font-size: 12px; font-weight: 600; }
   .row .s { font-size: 10.5px; color: var(--tg-soft); }
-  .row .r { margin-left: auto; font-size: 12px; font-weight: 700; white-space: nowrap; }
-  .st { font-size: 9.5px; font-weight: 700; padding: 1px 7px; border-radius: 999px; }
+  .row .r { margin-left: auto; font-size: 12px; font-weight: 700; white-space: nowrap; text-align: right; }
+  .st { font-size: 9.5px; font-weight: 700; padding: 1px 7px; border-radius: 999px; display: inline-block; margin-top: 2px; }
   .st-new { color: #7cb6f7; background: rgba(82,136,193,.18); }
   .st-work { color: #e8b35a; background: rgba(232,179,90,.15); }
+  .st-done { color: #6fd18a; background: rgba(79,174,78,.15); }
 
-  /* ── Tab bar ── */
-  .tabbar { display: flex; background: var(--tg-panel); border-top: 1px solid rgba(255,255,255,.05); padding: 6px 4px 14px; }
-  .tab { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 9px; color: var(--tg-soft); padding: 4px 0; }
+  /* Detail */
+  .back { display: inline-flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: var(--tg-accent); background: none; border: none; cursor: pointer; font-family: inherit; padding: 0 0 10px; }
+  .det-card { background: var(--tg-panel); border-radius: 12px; padding: 14px; }
+  .det-line { display: flex; justify-content: space-between; padding: 7px 0; border-bottom: 1px solid rgba(255,255,255,.06); font-size: 12px; }
+  .det-line:last-child { border-bottom: none; }
+  .det-line .k { color: var(--tg-soft); }
+  .det-line .v { font-weight: 600; }
+  .det-actions { display: flex; gap: 8px; margin-top: 12px; }
+  .btn { flex: 1; font-size: 12px; font-weight: 700; border: none; border-radius: 10px; padding: 9px 0; cursor: pointer; font-family: inherit; }
+  .btn-p { background: var(--tg-accent); color: #fff; }
+  .btn-g { background: rgba(255,255,255,.08); color: var(--tg-text); }
+
+  /* Toggle */
+  .switch { margin-left: auto; width: 36px; height: 20px; border-radius: 999px; background: rgba(255,255,255,.15); position: relative; cursor: pointer; transition: background .15s; flex-shrink: 0; border: none; }
+  .switch::after { content: ""; position: absolute; top: 2px; left: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; transition: left .15s; }
+  .switch.on { background: var(--green); }
+  .switch.on::after { left: 18px; }
+
+  .tabbar { display: flex; background: var(--tg-panel); border-top: 1px solid rgba(255,255,255,.05); padding: 6px 4px 14px; flex-shrink: 0; }
+  .tab { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 9px; color: var(--tg-soft); padding: 4px 0; cursor: pointer; border: none; background: none; font-family: inherit; position: relative; }
   .tab svg { width: 19px; height: 19px; }
   .tab.active { color: var(--tg-accent); }
-  .tab .bdg { position: absolute; margin-left: 22px; margin-top: -2px; background: var(--primary); color: #fff; font-size: 8px; font-weight: 700; border-radius: 999px; padding: 0 5px; }
+  .tab .bdg { position: absolute; top: 0; margin-left: 22px; background: var(--primary); color: #fff; font-size: 8px; font-weight: 700; border-radius: 999px; padding: 0 5px; }
 
   .foot { margin-top: 14px; font-size: 11px; color: var(--soft); }
 </style>
@@ -88,45 +111,133 @@
       <div class="tg-dots">⋮</div>
     </div>
 
-    <div class="tg-body">
-      <div class="greet">Доброго ранку, Олено</div>
-      <div class="greet-sub">Субота, 18 жовтня · о 09:12</div>
-
-      <div class="kpis">
-        <div class="kpi"><div class="l">Виторг сьогодні</div><div class="v">9 550 ₴</div><div class="d">+12%</div></div>
-        <div class="kpi"><div class="l">Замовлення</div><div class="v">3</div><div class="d">2 нові</div></div>
-        <div class="kpi"><div class="l">Записи</div><div class="v">2</div><div class="d">11:00 · 14:30</div></div>
-        <div class="kpi"><div class="l">Заявки</div><div class="v">1</div><div class="d">вакансія</div></div>
-      </div>
-
-      <div class="sect">Останні замовлення</div>
-      <div class="row">
-        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></div>
-        <div><div class="t">#1042 · Олена К.</div><div class="s">Сукня міді «Терен»</div></div>
-        <div class="r">2 290 ₴<br><span class="st st-work">у роботі</span></div>
-      </div>
-      <div class="row">
-        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></div>
-        <div><div class="t">#1041 · Марко В.</div><div class="s">Тренч «Пісок»</div></div>
-        <div class="r">3 590 ₴<br><span class="st st-new">нове</span></div>
-      </div>
-      <div class="row">
-        <div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg></div>
-        <div><div class="t">Запис · Юлія М.</div><div class="s">Примірка, 14:30</div></div>
-        <div class="r"><span class="st st-new">сьогодні</span></div>
-      </div>
+    <div class="pages">
+      <div class="page active" data-page="dash"></div>
+      <div class="page" data-page="orders"></div>
+      <div class="page" data-page="goods"></div>
+      <div class="page" data-page="more"></div>
     </div>
 
-    <div class="tabbar">
-      <div class="tab active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>Дашборд</div>
-      <div class="tab"><span class="bdg">2</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>Замовл.</div>
-      <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>Товари</div>
-      <div class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>Ще</div>
-    </div>
+    <div class="tabbar" id="tabbar"></div>
   </div>
 </div>
 
-<div class="foot">Вигадані дані — демонстрація інтерфейсу</div>
+<div class="foot">Вигадані дані — демонстрація інтерфейсу · натисніть вкладки знизу</div>
 
+<script>
+const ORDERS = [
+  { id: 1042, client: "Олена К.", items: "Сукня міді «Терен» ×1", sum: 2290, status: "у роботі", cls: "st-work", time: "сьогодні 12:24" },
+  { id: 1041, client: "Марко В.", items: "Тренч «Пісок» ×1", sum: 3590, status: "нове", cls: "st-new", time: "сьогодні 10:11" },
+  { id: 1040, client: "Ірина Л.", items: "Сорочка ×2, хустка ×1", sum: 3670, status: "нове", cls: "st-new", time: "вчора 18:40" },
+  { id: 1039, client: "Світлана П.", items: "Кардиган «Туман» ×1", sum: 2190, status: "видано", cls: "st-done", time: "вчора 15:02" },
+  { id: 1038, client: "Андрій Д.", items: "Джинси «Індиго» ×1", sum: 1990, status: "видано", cls: "st-done", time: "15 жовтня" },
+];
+const GOODS = [
+  { name: "Пальто-кокон «Графіт»", price: 4890, stock: 5, on: true },
+  { name: "Сукня міді «Терен»", price: 2290, stock: 8, on: true },
+  { name: "Сорочка «Молоко»", price: 1490, stock: 12, on: true },
+  { name: "Джинси «Індиго»", price: 1990, stock: 6, on: true },
+  { name: "Тренч «Пісок»", price: 3590, stock: 3, on: false },
+];
+const SETTINGS = [
+  { key: "ord", label: "Нові замовлення", sub: "сповіщення одразу", on: true },
+  { key: "book", label: "Записи", sub: "за годину до візиту", on: true },
+  { key: "app", label: "Заявки на вакансії", sub: "щоденний дайджест", on: true },
+  { key: "rev", label: "Відгуки", sub: "поки вимкнено", on: false },
+];
+const fmt = n => n.toLocaleString("uk-UA") + " ₴";
+const orderIcon = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>`;
+
+const PAGES = {
+  dash: () => `
+    <div class="greet">Доброго ранку, Олено</div>
+    <div class="greet-sub">Субота, 18 жовтня · о 09:12</div>
+    <div class="kpis">
+      <div class="kpi"><div class="l">Виторг сьогодні</div><div class="v">9 550 ₴</div><div class="d">+12%</div></div>
+      <div class="kpi"><div class="l">Замовлення</div><div class="v">3</div><div class="d">2 нові</div></div>
+      <div class="kpi"><div class="l">Записи</div><div class="v">2</div><div class="d">11:00 · 14:30</div></div>
+      <div class="kpi"><div class="l">Заявки</div><div class="v">1</div><div class="d">вакансія</div></div>
+    </div>
+    <div class="sect">Останні замовлення</div>
+    ${ORDERS.slice(0, 3).map(o => orderRow(o)).join("")}
+    <div class="sect">Сьогоднішні записи</div>
+    <div class="row"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/></svg></div>
+      <div><div class="t">Юлія М.</div><div class="s">Примірка, 14:30</div></div><div class="r"><span class="st st-new">сьогодні</span></div></div>`,
+  orders: () => `
+    <div class="greet">Замовлення</div>
+    <div class="greet-sub">5 останніх · натисніть для деталей</div>
+    ${ORDERS.map(o => orderRow(o)).join("")}`,
+  goods: () => `
+    <div class="greet">Товари</div>
+    <div class="greet-sub">12 позицій · перемикач = активність</div>
+    ${GOODS.map((g, i) => `
+      <div class="row"><div class="ic">${orderIcon}</div>
+        <div><div class="t">${g.name}</div><div class="s">${g.stock} шт · ${fmt(g.price)}</div></div>
+        <button class="switch${g.on ? " on" : ""}" onclick="event.stopPropagation();this.classList.toggle('on')"></button></div>`).join("")}
+    <button class="btn btn-p" style="width:100%;margin-top:8px" onclick="alert('Демо: форма нового товару')">+ Додати товар</button>`,
+  more: () => `
+    <div class="greet">Ще</div>
+    <div class="greet-sub">сповіщення та налаштування</div>
+    <div class="sect">Сповіщення</div>
+    ${SETTINGS.map(s => `
+      <div class="row"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></div>
+        <div><div class="t">${s.label}</div><div class="s">${s.sub}</div></div>
+        <button class="switch${s.on ? " on" : ""}" onclick="this.classList.toggle('on')"></button></div>`).join("")}
+    <div class="sect">Магазин</div>
+    <div class="row"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v16a2 2 0 0 0 2 2h16"/><path d="M18 17V9"/><path d="M13 17V5"/><path d="M8 17v-3"/></svg></div>
+      <div><div class="t">Аналітика</div><div class="s">виторг за місяць 28 400 ₴</div></div></div>
+    <div class="row"><div class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg></div>
+      <div><div class="t">Тариф</div><div class="s">Pro · до 1 листопада</div></div></div>`,
+};
+
+function orderRow(o) {
+  return `<div class="row" onclick="openOrder(${o.id})"><div class="ic">${orderIcon}</div>
+    <div><div class="t">#${o.id} · ${o.client}</div><div class="s">${o.items}</div></div>
+    <div class="r">${fmt(o.sum)}<br><span class="st ${o.cls}">${o.status}</span></div></div>`;
+}
+
+function openOrder(id) {
+  const o = ORDERS.find(x => x.id === id);
+  const page = document.querySelector('[data-page="orders"]');
+  page.innerHTML = `
+    <button class="back" onclick="render('orders')">← Назад</button>
+    <div class="det-card">
+      <div class="t" style="font-size:14px;margin-bottom:8px">Замовлення #${o.id}</div>
+      <div class="det-line"><span class="k">Клієнт</span><span class="v">${o.client}</span></div>
+      <div class="det-line"><span class="k">Склад</span><span class="v">${o.items}</span></div>
+      <div class="det-line"><span class="k">Сума</span><span class="v">${fmt(o.sum)}</span></div>
+      <div class="det-line"><span class="k">Статус</span><span class="st ${o.cls}">${o.status}</span></div>
+      <div class="det-line"><span class="k">Час</span><span class="v">${o.time}</span></div>
+    </div>
+    <div class="det-actions">
+      <button class="btn btn-p" onclick="this.textContent='Статус оновлено'">У роботу</button>
+      <button class="btn btn-g" onclick="this.textContent='Надіслано'">Написати клієнту</button>
+    </div>`;
+  switchPage("orders");
+}
+
+const TABS = [
+  { id: "dash", label: "Дашборд", icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>` },
+  { id: "orders", label: "Замовл.", badge: 2, icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>` },
+  { id: "goods", label: "Товари", icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>` },
+  { id: "more", label: "Ще", icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>` },
+];
+
+let current = "dash";
+function render(id) {
+  document.querySelector(`[data-page="${id}"]`).innerHTML = PAGES[id]();
+}
+function switchPage(id) {
+  current = id;
+  document.querySelectorAll(".page").forEach(p => p.classList.toggle("active", p.dataset.page === id));
+  document.querySelectorAll(".tab").forEach(t => t.classList.toggle("active", t.dataset.tab === id));
+}
+function renderTabs() {
+  document.getElementById("tabbar").innerHTML = TABS.map(t =>
+    `<button class="tab${t.id === current ? " active" : ""}" data-tab="${t.id}" onclick="switchPage('${t.id}')">${t.badge ? `<span class="bdg">${t.badge}</span>` : ""}${t.icon}${t.label}</button>`).join("");
+}
+Object.keys(PAGES).forEach(render);
+renderTabs();
+</script>
 </body>
 </html>
