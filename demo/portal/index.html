@@ -1,19 +1,137 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="uk">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="robots" content="noindex">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-    <title>SmartHire — Candidate Portal</title>
-    <meta name="description" content="SmartHire Candidate Portal — apply for jobs, book services, and shop." />
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex">
+<title>Крамниця «Примірник» — демо-вітрина</title>
+<style>
+  @font-face { font-family: "Geist"; src: url("../assets/fonts/geist-latin.woff2") format("woff2"); font-weight: 100 900; font-style: normal; font-display: swap; unicode-range: U+0000-00FF; }
+  @font-face { font-family: "Geist"; src: url("../assets/fonts/geist-cyrillic.woff2") format("woff2"); font-weight: 100 900; font-style: normal; font-display: swap; unicode-range: U+0400-04FF; }
 
-    <!-- Preconnect to Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <script type="module" crossorigin src="/SmartHire-Showcase/demo/portal/assets/index-BC50XPf5.js"></script>
-    <link rel="stylesheet" crossorigin href="/SmartHire-Showcase/demo/portal/assets/index-B7u1OTuj.css">
-  </head>
-  <body class="antialiased selection:bg-blue-100 dark:selection:bg-blue-900/30 overflow-x-hidden">
-    <div id="root"></div>
-  </body>
+  :root {
+    --primary: #4f46e5;
+    --accent: #6366f1;
+    --text: #0f172a;
+    --muted: #475569;
+    --soft: #64748b;
+    --bg: #ffffff;
+    --bg-alt: #f8fafc;
+    --border: #e2e8f0;
+    --green: #16a34a;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: "Geist", -apple-system, "Segoe UI", sans-serif; background: var(--bg); color: var(--text); font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+
+  /* ── Top bar ── */
+  nav { position: sticky; top: 0; z-index: 10; background: rgba(255,255,255,.85); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); }
+  nav .in { max-width: 920px; margin: 0 auto; padding: 0 20px; height: 56px; display: flex; align-items: center; gap: 22px; }
+  .logo { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 16px; letter-spacing: -.3px; }
+  .logo-mark { width: 28px; height: 28px; border-radius: 8px; background: var(--primary); color: #fff; font-size: 13px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+  .nav-links { display: flex; gap: 18px; margin-left: 6px; }
+  .nav-links a { color: var(--muted); text-decoration: none; font-size: 13px; font-weight: 500; }
+  .nav-links a:hover { color: var(--primary); }
+  .demo-pill { font-size: 9.5px; font-weight: 700; letter-spacing: .6px; color: #d97706; background: #fffbeb; border: 1px solid #fde68a; border-radius: 999px; padding: 2px 8px; }
+  .cart { margin-left: auto; display: inline-flex; align-items: center; gap: 7px; background: var(--primary); color: #fff; font-size: 13px; font-weight: 600; border-radius: 10px; padding: 7px 14px; }
+  .cart svg { width: 15px; height: 15px; }
+  .cart .cnt { background: rgba(255,255,255,.25); border-radius: 999px; font-size: 11px; font-weight: 700; padding: 0 7px; }
+
+  .wrap { max-width: 920px; margin: 0 auto; padding: 0 20px; }
+
+  /* ── Hero ── */
+  .hero { padding: 30px 0 22px; }
+  .hero h1 { font-size: 26px; font-weight: 800; letter-spacing: -.6px; margin-bottom: 6px; }
+  .hero h1 em { font-style: normal; color: var(--primary); }
+  .hero p { color: var(--muted); font-size: 14.5px; max-width: 560px; }
+
+  .cats { display: flex; gap: 8px; flex-wrap: wrap; padding: 16px 0 20px; }
+  .cat { font-size: 12.5px; font-weight: 600; color: var(--muted); background: var(--bg-alt); border: 1px solid var(--border); border-radius: 999px; padding: 6px 14px; }
+  .cat.active { color: #fff; background: var(--primary); border-color: var(--primary); }
+
+  /* ── Product grid ── */
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; padding-bottom: 24px; }
+  .p-card { background: var(--bg-alt); border: 1px solid #f1f5f9; border-radius: 14px; overflow: hidden; transition: all .2s ease; }
+  .p-card:hover { background: #fff; box-shadow: 0 14px 30px -10px rgba(15,23,42,.1); transform: translateY(-3px); }
+  .p-img { height: 120px; position: relative; }
+  .p-tag { position: absolute; top: 9px; left: 9px; font-size: 10px; font-weight: 700; letter-spacing: .4px; color: #fff; background: rgba(15,23,42,.55); backdrop-filter: blur(4px); border-radius: 999px; padding: 2px 8px; }
+  .p-body { padding: 13px 14px 14px; }
+  .p-name { font-size: 13.5px; font-weight: 700; margin-bottom: 3px; }
+  .p-sub { font-size: 11.5px; color: var(--soft); margin-bottom: 10px; }
+  .p-foot { display: flex; align-items: center; justify-content: space-between; }
+  .p-price { font-size: 15px; font-weight: 800; letter-spacing: -.3px; }
+  .p-btn { font-size: 12px; font-weight: 700; color: var(--primary); background: #eef2ff; border-radius: 8px; padding: 6px 11px; }
+  .p-btn:hover { background: var(--primary); color: #fff; }
+
+  /* ── Booking strip ── */
+  .booking { background: linear-gradient(135deg, #eef2ff, #e0e7ff); border-radius: 16px; padding: 22px 24px; display: flex; align-items: center; gap: 20px; margin-bottom: 26px; }
+  .booking .b-icon { width: 46px; height: 46px; border-radius: 12px; background: #fff; box-shadow: 0 2px 6px rgba(79,70,229,.15); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .booking .b-icon svg { width: 22px; height: 22px; color: var(--primary); }
+  .booking h3 { font-size: 15px; font-weight: 700; margin-bottom: 3px; }
+  .booking p { font-size: 12.5px; color: var(--muted); }
+  .slots { display: flex; gap: 6px; margin-top: 9px; flex-wrap: wrap; }
+  .slot { font-size: 11.5px; font-weight: 600; color: var(--primary); background: #fff; border: 1px solid #c7d2fe; border-radius: 8px; padding: 4px 10px; }
+  .slot.off { color: var(--soft); border-color: var(--border); text-decoration: line-through; }
+  .booking .cta { margin-left: auto; flex-shrink: 0; background: var(--primary); color: #fff; font-size: 13px; font-weight: 700; border-radius: 11px; padding: 11px 20px; }
+
+  footer { border-top: 1px solid var(--border); padding: 16px 0 20px; }
+  footer .wrap { display: flex; justify-content: space-between; font-size: 12px; color: var(--soft); flex-wrap: wrap; gap: 8px; }
+
+  @media (max-width: 640px) {
+    .grid { grid-template-columns: 1fr 1fr; }
+    .nav-links { display: none; }
+    .booking { flex-direction: column; align-items: flex-start; }
+    .booking .cta { margin-left: 0; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="in">
+    <div class="logo"><div class="logo-mark">П</div>Крамниця «Примірник»</div>
+    <div class="nav-links"><a href="#">Каталог</a><a href="#">Запис</a><a href="#">Про нас</a></div>
+    <span class="demo-pill">ДЕМО</span>
+    <div class="cart"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>Кошик<span class="cnt">2</span></div>
+  </div>
+</nav>
+
+<div class="wrap">
+  <div class="hero">
+    <h1>Одяг для міста <em>й подорожей</em></h1>
+    <p>Незалежний магазин з 2019 року. Новинки щотижня — записуйтесь на примірку онлайн.</p>
+  </div>
+
+  <div class="cats">
+    <span class="cat active">Всі</span><span class="cat">Верхній одяг</span><span class="cat">Сукні</span>
+    <span class="cat">Денім</span><span class="cat">Аксесуари</span>
+  </div>
+
+  <div class="grid">
+    <div class="p-card"><div class="p-img" style="background:linear-gradient(135deg,#94a3b8,#64748b)"><span class="p-tag">новинка</span></div><div class="p-body"><div class="p-name">Пальто-кокон «Графіт»</div><div class="p-sub">вовна 70% · XS–XL</div><div class="p-foot"><span class="p-price">4 890 ₴</span><span class="p-btn">У кошик</span></div></div></div>
+    <div class="p-card"><div class="p-img" style="background:linear-gradient(135deg,#c7d2fe,#818cf8)"></div><div class="p-body"><div class="p-name">Сукня міді «Терен»</div><div class="p-sub">льон, віскоза · S–L</div><div class="p-foot"><span class="p-price">2 290 ₴</span><span class="p-btn">У кошик</span></div></div></div>
+    <div class="p-card"><div class="p-img" style="background:linear-gradient(135deg,#e2e8f0,#cbd5e1)"></div><div class="p-body"><div class="p-name">Сорочка оверсайз «Молоко»</div><div class="p-sub">бавовна-поплін</div><div class="p-foot"><span class="p-price">1 490 ₴</span><span class="p-btn">У кошик</span></div></div></div>
+    <div class="p-card"><div class="p-img" style="background:linear-gradient(135deg,#93c5fd,#3b82f6)"><span class="p-tag">хіт</span></div><div class="p-body"><div class="p-name">Джинси straight «Індиго»</div><div class="p-sub">денім 12 oz · 26–34</div><div class="p-foot"><span class="p-price">1 990 ₴</span><span class="p-btn">У кошик</span></div></div></div>
+    <div class="p-card"><div class="p-img" style="background:linear-gradient(135deg,#fde68a,#d97706)"></div><div class="p-body"><div class="p-name">Тренч «Пісок»</div><div class="p-sub">водовідштовхувальний</div><div class="p-foot"><span class="p-price">3 590 ₴</span><span class="p-btn">У кошик</span></div></div></div>
+    <div class="p-card"><div class="p-img" style="background:linear-gradient(135deg,#fca5a5,#dc2626)"></div><div class="p-body"><div class="p-name">Сукня «Вишнева ніч»</div><div class="p-sub">атлас · XS–M</div><div class="p-foot"><span class="p-price">2 690 ₴</span><span class="p-btn">У кошик</span></div></div></div>
+  </div>
+
+  <div class="booking">
+    <div class="b-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="m9 16 2 2 4-4"/></svg></div>
+    <div>
+      <h3>Запис на примірку</h3>
+      <p>Відкладемо обрані речі у примірочну — до 6 позицій, безкоштовно.</p>
+      <div class="slots"><span class="slot">11:00</span><span class="slot off">12:00</span><span class="slot">14:00</span><span class="slot">15:00</span><span class="slot">17:00</span></div>
+    </div>
+    <div class="cta">Обрати час</div>
+  </div>
+</div>
+
+<footer>
+  <div class="wrap">
+    <span>© 2026 Крамниця «Примірник» — вигаданий магазин для демонстрації</span>
+    <span>вул. Вигадана, 7 · @prymirnyk_bot</span>
+  </div>
+</footer>
+
+</body>
 </html>
