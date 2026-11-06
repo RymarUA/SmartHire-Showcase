@@ -5,6 +5,23 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex">
 <title>Mini App «Примірник» — демо</title>
+<script>
+/* Тема: ?theme=dark|light → постійно; postMessage {type:'itg-theme'} від батька; інакше ОС */
+(function(){
+  var osDark = matchMedia('(prefers-color-scheme: dark)');
+  var mode = new URLSearchParams(location.search).get('theme');
+  if (mode !== 'dark' && mode !== 'light') mode = null;
+  function apply(){ document.documentElement.dataset.theme = mode || (osDark.matches ? 'dark' : 'light'); }
+  apply();
+  osDark.addEventListener('change', apply);
+  addEventListener('message', function(e){
+    var d = e.data;
+    if (!d || d.type !== 'itg-theme') return;
+    mode = (d.theme === 'dark' || d.theme === 'light') ? d.theme : null;
+    apply();
+  });
+})();
+</script>
 <style>
   @font-face { font-family: "Geist"; src: url("../../assets/fonts/geist-latin.woff2") format("woff2"); font-weight: 100 900; font-style: normal; font-display: swap; unicode-range: U+0000-00FF; }
   @font-face { font-family: "Geist"; src: url("../../assets/fonts/geist-cyrillic.woff2") format("woff2"); font-weight: 100 900; font-style: normal; font-display: swap; unicode-range: U+0400-04FF; }
@@ -22,12 +39,25 @@
     --tg-soft: #708499;
     --tg-accent: #5288c1;
     --green: #4fae4e;
+    --pill-text: #d97706;
+    --pill-bg: #fffbeb;
+    --pill-border: #fde68a;
+    color-scheme: light;
+  }
+  :root[data-theme="dark"] {
+    --text: #e2e8f0;
+    --soft: #7d8aa3;
+    --bg-alt: #0e1220;
+    --pill-text: #fbbf24;
+    --pill-bg: rgba(217,119,6,.16);
+    --pill-border: rgba(217,119,6,.4);
+    color-scheme: dark;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { font-family: "Geist", -apple-system, "Segoe UI", sans-serif; background: var(--bg-alt); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px 16px; }
+  body { font-family: "Geist", -apple-system, "Segoe UI", sans-serif; background: var(--bg-alt); color: var(--text); min-height: 100vh; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px 16px; transition: background .25s; }
 
   .caption { font-size: 12px; color: var(--soft); margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
-  .demo-pill { font-size: 9.5px; font-weight: 700; letter-spacing: .6px; color: #d97706; background: #fffbeb; border: 1px solid #fde68a; border-radius: 999px; padding: 2px 8px; }
+  .demo-pill { font-size: 9.5px; font-weight: 700; letter-spacing: .6px; color: var(--pill-text); background: var(--pill-bg); border: 1px solid var(--pill-border); border-radius: 999px; padding: 2px 8px; }
 
   .phone { width: 330px; border-radius: 40px; background: #0f172a; padding: 10px; box-shadow: 0 24px 48px -12px rgba(15,23,42,.35), 0 0 0 1px #334155; }
   .notch { width: 110px; height: 22px; background: #0f172a; border-radius: 0 0 14px 14px; margin: -10px auto 0; position: relative; z-index: 2; }
