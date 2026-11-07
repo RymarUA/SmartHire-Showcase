@@ -103,7 +103,8 @@
   .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; padding-bottom: 24px; }
   .p-card { background: var(--bg-alt); border: 1px solid var(--border-soft); border-radius: 14px; overflow: hidden; transition: all .2s ease; cursor: pointer; }
   .p-card:hover { background: var(--card-hover); box-shadow: 0 14px 30px -10px rgba(15,23,42,.1); transform: translateY(-3px); }
-  .p-img { height: 120px; position: relative; }
+  .p-img { height: 120px; position: relative; display: flex; align-items: center; justify-content: center; }
+  .p-art { width: 58px; height: 58px; filter: drop-shadow(0 6px 10px rgba(15,23,42,.25)); }
   .p-tag { position: absolute; top: 9px; left: 9px; font-size: 10px; font-weight: 700; letter-spacing: .4px; color: #fff; background: rgba(15,23,42,.55); backdrop-filter: blur(4px); border-radius: 999px; padding: 2px 8px; }
   .p-body { padding: 13px 14px 14px; }
   .p-name { font-size: 13.5px; font-weight: 700; margin-bottom: 3px; }
@@ -136,7 +137,8 @@
   .overlay.open { opacity: 1; pointer-events: auto; }
   .modal { background: var(--panel); border-radius: 18px; max-width: 400px; width: 100%; max-height: 85vh; overflow-y: auto; box-shadow: 0 24px 48px -12px rgba(15,23,42,.3); transform: translateY(8px); transition: transform .18s; }
   .overlay.open .modal { transform: none; }
-  .m-img { height: 150px; position: relative; border-radius: 18px 18px 0 0; }
+  .m-img { height: 150px; position: relative; border-radius: 18px 18px 0 0; display: flex; align-items: center; justify-content: center; }
+  .m-img .p-art { width: 84px; height: 84px; }
   .m-close { position: absolute; top: 10px; right: 10px; width: 30px; height: 30px; border-radius: 50%; border: none; background: var(--chip); color: var(--text); font-size: 16px; cursor: pointer; line-height: 1; }
   .m-body { padding: 18px 20px 20px; }
   .m-name { font-size: 17px; font-weight: 800; letter-spacing: -.3px; margin-bottom: 4px; }
@@ -151,7 +153,8 @@
 
   /* ── Cart modal ── */
   .c-item { display: flex; align-items: center; gap: 11px; padding: 10px 0; border-bottom: 1px solid var(--border-soft); }
-  .c-tile { width: 38px; height: 38px; border-radius: 9px; flex-shrink: 0; }
+  .c-tile { width: 38px; height: 38px; border-radius: 9px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+  .c-tile .p-art { width: 24px; height: 24px; filter: none; }
   .c-name { font-size: 13px; font-weight: 600; }
   .c-meta { font-size: 11px; color: var(--soft); }
   .c-price { margin-left: auto; font-size: 13px; font-weight: 700; white-space: nowrap; }
@@ -217,15 +220,25 @@
 
 <script>
 const PRODUCTS = [
-  { id: 1, name: "Пальто-кокон «Графіт»", cat: "Верхній одяг", price: 4890, sub: "вовна 70% · XS–XL", desc: "Вільний крій, підкладка віскоза. Зшито в Україні.", grad: "linear-gradient(135deg,#94a3b8,#64748b)", tag: "новинка", sizes: ["XS","S","M","L","XL"] },
-  { id: 2, name: "Сукня міді «Терен»", cat: "Сукні", price: 2290, sub: "льон, віскоза · S–L", desc: "Бокові шліци, кишені. Легка літня тканина.", grad: "linear-gradient(135deg,#c7d2fe,#818cf8)", sizes: ["S","M","L"] },
-  { id: 3, name: "Сорочка оверсайз «Молоко»", cat: "Сорочки", price: 1490, sub: "бавовна-поплін", desc: "Спущене плече, перламутрові ґудзики.", grad: "linear-gradient(135deg,#e2e8f0,#cbd5e1)", sizes: ["S","M","L","XL"] },
-  { id: 4, name: "Джинси straight «Індиго»", cat: "Денім", price: 1990, sub: "денім 12 oz · 26–34", desc: "Висока посадка, щільний японський денім.", grad: "linear-gradient(135deg,#93c5fd,#3b82f6)", tag: "хіт", sizes: ["26","28","30","32","34"] },
-  { id: 5, name: "Тренч «Пісок»", cat: "Верхній одяг", price: 3590, sub: "водовідштовхувальний", desc: "Класичний крій, пояс, рогові ґудзики.", grad: "linear-gradient(135deg,#fde68a,#d97706)", sizes: ["S","M","L"] },
-  { id: 6, name: "Сукня «Вишнева ніч»", cat: "Сукні", price: 2690, sub: "атлас · XS–M", desc: "Спина на зав'язках, довжина міді.", grad: "linear-gradient(135deg,#fca5a5,#dc2626)", sizes: ["XS","S","M"] },
-  { id: 7, name: "Светр «Шетланд»", cat: "Светри", price: 1890, sub: "шетландська вовна", desc: "Реглан-рукав, щільна в'язка.", grad: "linear-gradient(135deg,#a7f3d0,#059669)", sizes: ["S","M","L","XL"] },
-  { id: 8, name: "Хустка «Карпати»", cat: "Аксесуари", price: 690, sub: "вовна · 90×90", desc: "Геометричний орнамент гуцульських ткачів.", grad: "linear-gradient(135deg,#fdba74,#ea580c)", sizes: ["one size"] },
+  { id: 1, name: "Пальто-кокон «Графіт»", cat: "Верхній одяг", price: 4890, sub: "вовна 70% · XS–XL", desc: "Вільний крій, підкладка віскоза. Зшито в Україні.", grad: "linear-gradient(135deg,#94a3b8,#64748b)", art: "coat", tag: "новинка", sizes: ["XS","S","M","L","XL"] },
+  { id: 2, name: "Сукня міді «Терен»", cat: "Сукні", price: 2290, sub: "льон, віскоза · S–L", desc: "Бокові шліци, кишені. Легка літня тканина.", grad: "linear-gradient(135deg,#c7d2fe,#818cf8)", art: "dress", sizes: ["S","M","L"] },
+  { id: 3, name: "Сорочка оверсайз «Молоко»", cat: "Сорочки", price: 1490, sub: "бавовна-поплін", desc: "Спущене плече, перламутрові ґудзики.", grad: "linear-gradient(135deg,#e2e8f0,#cbd5e1)", art: "shirt", sizes: ["S","M","L","XL"] },
+  { id: 4, name: "Джинси straight «Індиго»", cat: "Денім", price: 1990, sub: "денім 12 oz · 26–34", desc: "Висока посадка, щільний японський денім.", grad: "linear-gradient(135deg,#93c5fd,#3b82f6)", art: "jeans", tag: "хіт", sizes: ["26","28","30","32","34"] },
+  { id: 5, name: "Тренч «Пісок»", cat: "Верхній одяг", price: 3590, sub: "водовідштовхувальний", desc: "Класичний крій, пояс, рогові ґудзики.", grad: "linear-gradient(135deg,#fde68a,#d97706)", art: "coat", sizes: ["S","M","L"] },
+  { id: 6, name: "Сукня «Вишнева ніч»", cat: "Сукні", price: 2690, sub: "атлас · XS–M", desc: "Спина на зав'язках, довжина міді.", grad: "linear-gradient(135deg,#fca5a5,#dc2626)", art: "dress", sizes: ["XS","S","M"] },
+  { id: 7, name: "Светр «Шетланд»", cat: "Светри", price: 1890, sub: "шетландська вовна", desc: "Реглан-рукав, щільна в'язка.", grad: "linear-gradient(135deg,#a7f3d0,#059669)", art: "sweater", sizes: ["S","M","L","XL"] },
+  { id: 8, name: "Хустка «Карпати»", cat: "Аксесуари", price: 690, sub: "вовна · 90×90", desc: "Геометричний орнамент гуцульських ткачів.", grad: "linear-gradient(135deg,#fdba74,#ea580c)", art: "scarf", sizes: ["one size"] },
 ];
+/* Стилізовані «фото» товарів: білий силует одягу поверх градієнту */
+const ART = {
+  coat: '<path d="M18 4 C20 7 28 7 30 4 L37 7 L43 24 L37 26 L37 44 L11 44 L11 26 L5 24 L11 7 Z"/>',
+  dress: '<path d="M19 4 L24 10 L29 4 L31 6 L28 16 L34 40 Q34.5 42 32 42 L16 42 Q13.5 42 14 40 L20 16 L17 6 Z"/>',
+  shirt: '<path d="M15 6 C16 9 20 11 24 11 C28 11 32 9 33 6 L41 10 L44 18 L37 20 L37 42 L11 42 L11 20 L4 18 L7 10 Z"/>',
+  jeans: '<path d="M13 6 L35 6 L35 12 L34 42 L26 42 L24 18 L22 42 L14 42 L13 12 Z"/>',
+  sweater: '<path d="M16 5 C17 8 20 9 24 9 C28 9 31 8 32 5 L40 8 L44 27 L37 28 L37 42 L11 42 L11 28 L4 27 L8 8 Z"/>',
+  scarf: '<rect x="14" y="8" width="8" height="30" rx="3"/><rect x="26" y="8" width="8" height="26" rx="3"/>',
+};
+const artSvg = p => `<svg class="p-art" viewBox="0 0 48 48" fill="rgba(255,255,255,.92)" aria-hidden="true">${ART[p.art] || ""}</svg>`;
 const CATS = ["Всі", ...new Set(PRODUCTS.map(p => p.cat))];
 const SLOT_LIST = [{ t: "11:00", free: true }, { t: "12:00", free: false }, { t: "14:00", free: true }, { t: "15:00", free: true }, { t: "17:00", free: true }];
 
@@ -254,7 +267,7 @@ function renderGrid() {
   const list = state.cat === "Всі" ? PRODUCTS : PRODUCTS.filter(p => p.cat === state.cat);
   $("grid").innerHTML = list.length ? list.map(p => `
     <div class="p-card" onclick="openProduct(${p.id})">
-      <div class="p-img" style="background:${p.grad}">${p.tag ? `<span class="p-tag">${p.tag}</span>` : ""}</div>
+      <div class="p-img" style="background:${p.grad}">${artSvg(p)}${p.tag ? `<span class="p-tag">${p.tag}</span>` : ""}</div>
       <div class="p-body">
         <div class="p-name">${p.name}</div>
         <div class="p-sub">${p.sub}</div>
@@ -268,7 +281,7 @@ function openProduct(id) {
   const p = PRODUCTS.find(x => x.id === id);
   state.selSize = p.sizes[0];
   $("modal").innerHTML = `
-    <div class="m-img" style="background:${p.grad}"><button class="m-close" onclick="closeModal()">✕</button></div>
+    <div class="m-img" style="background:${p.grad}">${artSvg(p)}<button class="m-close" onclick="closeModal()">✕</button></div>
     <div class="m-body">
       <div class="m-name">${p.name}</div>
       <div class="m-desc">${p.desc} <span style="color:var(--soft)">${p.sub}</span></div>
@@ -301,7 +314,7 @@ function openCart() {
         <button class="m-close" style="position:static" onclick="closeModal()">✕</button>
       </div>
       ${items.length ? items.map((p, i) => `
-        <div class="c-item"><div class="c-tile" style="background:${p.grad}"></div>
+        <div class="c-item"><div class="c-tile" style="background:${p.grad}">${artSvg(p)}</div>
           <div><div class="c-name">${p.name}</div><div class="c-meta">${p.sub}</div></div>
           <div class="c-price">${fmt(p.price)}</div>
           <button class="c-del" onclick="delItem(${i})">✕</button></div>`).join("")
