@@ -76,20 +76,23 @@
   body { font-family: "Geist", -apple-system, "Segoe UI", sans-serif; background: var(--bg-alt); color: var(--text); font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; transition: background .25s; }
 
   .app { display: flex; min-height: 100vh; }
-  .side { width: 216px; flex-shrink: 0; background: var(--panel); border-right: 1px solid var(--border); padding: 20px 14px; display: flex; flex-direction: column; }
-  .brand { display: flex; align-items: center; gap: 9px; padding: 0 8px 18px; border-bottom: 1px solid var(--border); margin-bottom: 14px; }
-  .brand-mark { width: 32px; height: 32px; border-radius: 9px; background: var(--primary); color: #fff; font-weight: 800; font-size: 15px; display: flex; align-items: center; justify-content: center; }
-  .brand-name { font-weight: 700; font-size: 15px; letter-spacing: -.3px; }
+  /* навігація — липкий нижній бар, як у мобільних застосунках */
+  .side {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
+    display: flex; flex-direction: row; align-items: stretch; gap: 2px;
+    background: var(--panel); border-top: 1px solid var(--border);
+    padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
+    box-shadow: 0 -4px 20px rgba(15,23,42,.06);
+  }
+  .brand, .nav-label, .side-foot { display: none; }
   .demo-pill { display: inline-block; font-size: 10px; font-weight: 700; letter-spacing: .6px; color: var(--amber); background: var(--pill-bg); border: 1px solid var(--pill-border); border-radius: 999px; padding: 2px 8px; margin-top: 3px; }
-  .nav-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .8px; color: var(--soft); padding: 10px 10px 6px; }
-  .nav-item { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 9px; color: var(--muted); font-size: 13.5px; font-weight: 500; margin-bottom: 2px; cursor: pointer; border: none; background: none; width: 100%; text-align: left; font-family: inherit; }
-  .nav-item svg { width: 17px; height: 17px; flex-shrink: 0; }
+  .nav-item { position: relative; flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 6px 4px; border-radius: 10px; color: var(--muted); font-size: 10.5px; font-weight: 500; cursor: pointer; border: none; background: none; text-align: center; font-family: inherit; }
+  .nav-item svg { width: 19px; height: 19px; flex-shrink: 0; }
   .nav-item.active { background: var(--tint); color: var(--primary-ink); font-weight: 600; }
   .nav-item:hover:not(.active) { background: var(--bg-alt); }
-  .nav-badge { margin-left: auto; background: var(--primary); color: #fff; font-size: 10px; font-weight: 700; border-radius: 999px; padding: 1px 7px; }
-  .side-foot { margin-top: auto; padding: 12px 8px 0; border-top: 1px solid var(--border); font-size: 11px; color: var(--soft); }
+  .nav-badge { position: absolute; top: 1px; right: 14%; background: var(--primary); color: #fff; font-size: 10px; font-weight: 700; border-radius: 999px; padding: 1px 7px; }
 
-  .main { flex: 1; min-width: 0; padding: 20px 24px 32px; }
+  .main { flex: 1; min-width: 0; padding: 20px 24px 96px; }
   .topbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 18px; }
   .crumb { font-size: 13px; color: var(--soft); }
   .crumb b { color: var(--text); font-weight: 600; }
@@ -161,17 +164,18 @@
   .book-name { font-weight: 600; font-size: 13px; }
   .book-sub { font-size: 11.5px; color: var(--soft); }
 
-  .toast { position: fixed; bottom: 18px; left: 50%; transform: translate(-50%, 60px); background: #0f172a; color: #fff; font-size: 13px; font-weight: 600; border-radius: 12px; padding: 11px 20px; z-index: 60; transition: transform .25s cubic-bezier(.2,.9,.3,1.2); pointer-events: none; box-shadow: 0 10px 24px rgba(15,23,42,.3); }
+  .toast { position: fixed; bottom: 84px; left: 50%; transform: translate(-50%, 60px); background: #0f172a; color: #fff; font-size: 13px; font-weight: 600; border-radius: 12px; padding: 11px 20px; z-index: 60; transition: transform .25s cubic-bezier(.2,.9,.3,1.2); pointer-events: none; box-shadow: 0 10px 24px rgba(15,23,42,.3); }
   .toast.show { transform: translate(-50%, 0); }
 
   @media (max-width: 860px) {
-    .side { width: 60px; padding: 16px 8px; }
-    .brand-name, .nav-label, .nav-item span:not(.nav-badge), .side-foot, .demo-pill { display: none; }
-    .nav-item { justify-content: center; }
-    .nav-badge { display: none; }
     .kpis { grid-template-columns: 1fr 1fr; }
     .row2 { grid-template-columns: 1fr; }
     .search { display: none; }
+  }
+  @media (max-width: 640px) {
+    .nav-item span:not(.nav-badge) { display: none; }
+    .nav-item svg { width: 21px; height: 21px; }
+    .nav-badge { right: 16%; }
   }
 </style>
 </head>
